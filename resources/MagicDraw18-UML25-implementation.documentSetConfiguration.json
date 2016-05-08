@@ -1,0 +1,48 @@
+{
+  "documents" : [ {
+    "otiCharacteristics" : {
+      "packageURI" : "http://www.omg.org/spec/PrimitiveTypes/20131001",
+      "documentURL" : "http://www.omg.org/spec/UML/20131001/PrimitiveTypes.xmi",
+      "artifactKind" : {
+        "type" : "OTIBuiltInModelLibraryArtifactKind"
+      },
+      "nsPrefix" : "PrimitiveTypes",
+      "uuidPrefix" : "org.omg.uml.PrimitiveTypes"
+    },
+    "toolSpecificPackageID" : "_12_0EAPbeta_be00301_1157529392394_202602_1",
+    "toolSpecificPackageURL" : "mdel://_12_0EAPbeta_be00301_1157529392394_202602_1?projectName=MagicDraw18-UML25-implementation&elementName=Package+PrimitiveTypes&metaType=Package&elementQName=UML+Standard+Profile%3A%3AUML2+Metamodel%3A%3APrimitiveTypes",
+    "overrideID" : [ ],
+    "overrideUUID" : [ ],
+    "excludeNestedElements" : [ ]
+  }, {
+    "otiCharacteristics" : {
+      "packageURI" : "http://www.omg.org/spec/UML/20131001",
+      "documentURL" : "http://www.omg.org/spec/UML/20131001/UML.xmi",
+      "artifactKind" : {
+        "type" : "OTIBuiltInMetamodelArtifactKind"
+      },
+      "nsPrefix" : "uml",
+      "uuidPrefix" : "org.omg.uml.UML"
+    },
+    "toolSpecificPackageID" : "_18_0beta_8f90291_1396614064410_380937_3985",
+    "toolSpecificPackageURL" : "mdel://_18_0beta_8f90291_1396614064410_380937_3985?projectName=MagicDraw18-UML25-implementation&elementName=Package+UML2.5&metaType=Package&elementQName=UML2.5",
+    "overrideID" : [ ],
+    "overrideUUID" : [ ],
+    "excludeNestedElements" : [ ]
+  }, {
+    "otiCharacteristics" : {
+      "packageURI" : "http://www.omg.org/spec/UML/20131001/StandardProfile",
+      "documentURL" : "http://www.omg.org/spec/UML/20131001/StandardProfile.xmi",
+      "artifactKind" : {
+        "type" : "OTIBuiltInProfileArtifactKind"
+      },
+      "nsPrefix" : "StandardProfile",
+      "uuidPrefix" : "org.omg.uml.StandardProfile"
+    },
+    "toolSpecificPackageID" : "_9_0_be00301_1108050582343_527400_10847",
+    "toolSpecificPackageURL" : "mdel://_9_0_be00301_1108050582343_527400_10847?projectName=MagicDraw18-UML25-implementation&elementName=Profile+StandardProfile&metaType=Profile&elementQName=UML+Standard+Profile%3A%3AStandardProfile",
+    "overrideID" : [ ],
+    "overrideUUID" : [ ],
+    "excludeNestedElements" : [ ]
+  } ]
+}

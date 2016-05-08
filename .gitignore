@@ -1,0 +1,8 @@
+.ensime*
+.idea
+*~
+*.bak
+links.json
+project/project
+project/target
+target

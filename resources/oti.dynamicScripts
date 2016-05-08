@@ -1,0 +1,131 @@
+#
+dynamicScripts(
+      name='OMG Tool Infrastructure / MOF Json'
+      [ m: Model ]
+      scripts {
+          BrowserContextMenuAction(
+              name: 'Export As OTI MOF Metamodels'
+              project: imce.oti.mof.magicdraw.dynamicscripts
+              dependencies: { org.omg.oti.mof.schema, org.omg.oti.mof.spark, imce.oti.uml.magicdraw.dynamicscripts, org.omg.oti.uml.json, org.omg.oti.uml.json.serialization, org.omg.oti.uml.core, org.omg.oti.uml.composite_structure_tree_analysis, org.omg.oti.uml.change_migration, org.omg.oti.uml.magicdraw.adapter }
+              access: r/o
+              class: imce.oti.mof.magicdraw.dynamicscripts.tiwg.ExportAsOTIMOFMetamodels
+              method: doit
+          )
+          DiagramContextMenuAction(
+              name: 'Export As OTI MOF Metamodels'
+              project: imce.oti.mof.magicdraw.dynamicscripts
+              dependencies: { org.omg.oti.mof.schema, org.omg.oti.mof.spark, imce.oti.uml.magicdraw.dynamicscripts, org.omg.oti.uml.json, org.omg.oti.uml.json.serialization, org.omg.oti.uml.core, org.omg.oti.uml.composite_structure_tree_analysis, org.omg.oti.uml.change_migration, org.omg.oti.uml.magicdraw.adapter }
+              access: r/o
+              class: imce.oti.mof.magicdraw.dynamicscripts.tiwg.ExportAsOTIMOFMetamodels
+              method: doit
+          )
+      })
+
+dynamicScripts(
+      name='OMG Tool Infrastructure / MOF Json'
+      [ m: Package ]
+      scripts {
+          BrowserContextMenuAction(
+              name: 'Export As OTI MOF Libraries'
+              project: imce.oti.mof.magicdraw.dynamicscripts
+              dependencies: { org.omg.oti.mof.schema, org.omg.oti.mof.spark, imce.oti.uml.magicdraw.dynamicscripts, org.omg.oti.uml.json, org.omg.oti.uml.json.serialization, org.omg.oti.uml.core, org.omg.oti.uml.composite_structure_tree_analysis, org.omg.oti.uml.change_migration, org.omg.oti.uml.magicdraw.adapter }
+              access: r/o
+              class: imce.oti.mof.magicdraw.dynamicscripts.tiwg.ExportAsOTIMOFLibraries
+              method: doit
+          )
+          DiagramContextMenuAction(
+              name: 'Export As OTI MOF Libraries'
+              project: imce.oti.mof.magicdraw.dynamicscripts
+              dependencies: { org.omg.oti.mof.schema, org.omg.oti.mof.spark, imce.oti.uml.magicdraw.dynamicscripts, org.omg.oti.uml.json, org.omg.oti.uml.json.serialization, org.omg.oti.uml.core, org.omg.oti.uml.composite_structure_tree_analysis, org.omg.oti.uml.change_migration, org.omg.oti.uml.magicdraw.adapter }
+              access: r/o
+              class: imce.oti.mof.magicdraw.dynamicscripts.tiwg.ExportAsOTIMOFLibraries
+              method: doit
+          )
+
+          BrowserContextMenuAction(
+              name: 'Export As OTI MOF Models'
+              project: imce.oti.mof.magicdraw.dynamicscripts
+              dependencies: { org.omg.oti.mof.schema, org.omg.oti.mof.spark, imce.oti.uml.magicdraw.dynamicscripts, org.omg.oti.uml.json, org.omg.oti.uml.json.serialization, org.omg.oti.uml.core, org.omg.oti.uml.composite_structure_tree_analysis, org.omg.oti.uml.change_migration, org.omg.oti.uml.magicdraw.adapter }
+              access: r/o
+              class: imce.oti.mof.magicdraw.dynamicscripts.tiwg.ExportAsOTIMOFModels
+              method: doit
+          )
+          DiagramContextMenuAction(
+              name: 'Export As OTI MOF Models'
+              project: imce.oti.mof.magicdraw.dynamicscripts
+              dependencies: { org.omg.oti.mof.schema, org.omg.oti.mof.spark, imce.oti.uml.magicdraw.dynamicscripts, org.omg.oti.uml.json, org.omg.oti.uml.json.serialization, org.omg.oti.uml.core, org.omg.oti.uml.composite_structure_tree_analysis, org.omg.oti.uml.change_migration, org.omg.oti.uml.magicdraw.adapter }
+              access: r/o
+              class: imce.oti.mof.magicdraw.dynamicscripts.tiwg.ExportAsOTIMOFModels
+              method: doit
+          )
+          BrowserContextMenuAction(
+              name: 'Export As OTI MOF Metamodels'
+              project: imce.oti.mof.magicdraw.dynamicscripts
+              dependencies: { org.omg.oti.mof.schema, org.omg.oti.mof.spark, imce.oti.uml.magicdraw.dynamicscripts, org.omg.oti.uml.json, org.omg.oti.uml.json.serialization, org.omg.oti.uml.core, org.omg.oti.uml.composite_structure_tree_analysis, org.omg.oti.uml.change_migration, org.omg.oti.uml.magicdraw.adapter }
+              access: r/o
+              class: imce.oti.mof.magicdraw.dynamicscripts.tiwg.ExportAsOTIMOFMetamodels
+              method: doit
+          )
+          DiagramContextMenuAction(
+              name: 'Export As OTI MOF Metamodels'
+              project: imce.oti.mof.magicdraw.dynamicscripts
+              dependencies: { org.omg.oti.mof.schema, org.omg.oti.mof.spark, imce.oti.uml.magicdraw.dynamicscripts, org.omg.oti.uml.json, org.omg.oti.uml.json.serialization, org.omg.oti.uml.core, org.omg.oti.uml.composite_structure_tree_analysis, org.omg.oti.uml.change_migration, org.omg.oti.uml.magicdraw.adapter }
+              access: r/o
+              class: imce.oti.mof.magicdraw.dynamicscripts.tiwg.ExportAsOTIMOFMetamodels
+              method: doit
+          )
+          BrowserContextMenuAction(
+              name: 'Export OTI DocumentSet Configurations'
+              project: imce.oti.mof.magicdraw.dynamicscripts
+              dependencies: { org.omg.oti.mof.schema, org.omg.oti.mof.spark, imce.oti.uml.magicdraw.dynamicscripts, org.omg.oti.uml.json, org.omg.oti.uml.json.serialization, org.omg.oti.uml.core, org.omg.oti.uml.composite_structure_tree_analysis, org.omg.oti.uml.change_migration, org.omg.oti.uml.magicdraw.adapter }
+              access: r/o
+              class: imce.oti.mof.magicdraw.dynamicscripts.tiwg.ExportOTIDocumentSetConfiguration
+              method: doit
+          )
+          DiagramContextMenuAction(
+              name: 'Export OTI DocumentSet Configurations'
+              project: imce.oti.mof.magicdraw.dynamicscripts
+              dependencies: { org.omg.oti.mof.schema, org.omg.oti.mof.spark, imce.oti.uml.magicdraw.dynamicscripts, org.omg.oti.uml.json, org.omg.oti.uml.json.serialization, org.omg.oti.uml.core, org.omg.oti.uml.composite_structure_tree_analysis, org.omg.oti.uml.change_migration, org.omg.oti.uml.magicdraw.adapter }
+              access: r/o
+              class: imce.oti.mof.magicdraw.dynamicscripts.tiwg.ExportOTIDocumentSetConfiguration
+              method: doit
+          )
+      })
+
+dynamicScripts(
+      name='OMG Tool Infrastructure / MOF Json'
+      [ m: Profile ]
+      scripts {
+          BrowserContextMenuAction(
+              name: 'Export As OTI MOF Profiles'
+              project: imce.oti.mof.magicdraw.dynamicscripts
+              dependencies: { org.omg.oti.mof.schema, org.omg.oti.mof.spark, imce.oti.uml.magicdraw.dynamicscripts, org.omg.oti.uml.json, org.omg.oti.uml.json.serialization, org.omg.oti.uml.core, org.omg.oti.uml.composite_structure_tree_analysis, org.omg.oti.uml.change_migration, org.omg.oti.uml.magicdraw.adapter }
+              access: r/o
+              class: imce.oti.mof.magicdraw.dynamicscripts.tiwg.ExportAsOTIMOFProfiles
+              method: doit
+          )
+          DiagramContextMenuAction(
+              name: 'Export As OTI MOF Profiles'
+              project: imce.oti.mof.magicdraw.dynamicscripts
+              dependencies: { org.omg.oti.mof.schema, org.omg.oti.mof.spark, imce.oti.uml.magicdraw.dynamicscripts, org.omg.oti.uml.json, org.omg.oti.uml.json.serialization, org.omg.oti.uml.core, org.omg.oti.uml.composite_structure_tree_analysis, org.omg.oti.uml.change_migration, org.omg.oti.uml.magicdraw.adapter }
+              access: r/o
+              class: imce.oti.mof.magicdraw.dynamicscripts.tiwg.ExportAsOTIMOFProfiles
+              method: doit
+          )
+          BrowserContextMenuAction(
+              name: 'Export OTI DocumentSet Configurations'
+              project: imce.oti.mof.magicdraw.dynamicscripts
+              dependencies: { org.omg.oti.mof.schema, org.omg.oti.mof.spark, imce.oti.uml.magicdraw.dynamicscripts, org.omg.oti.uml.json, org.omg.oti.uml.json.serialization, org.omg.oti.uml.core, org.omg.oti.uml.composite_structure_tree_analysis, org.omg.oti.uml.change_migration, org.omg.oti.uml.magicdraw.adapter }
+              access: r/o
+              class: imce.oti.mof.magicdraw.dynamicscripts.tiwg.ExportOTIDocumentSetConfiguration
+              method: doit
+          )
+          DiagramContextMenuAction(
+              name: 'Export OTI DocumentSet Configurations'
+              project: imce.oti.mof.magicdraw.dynamicscripts
+              dependencies: { org.omg.oti.mof.schema, org.omg.oti.mof.spark, imce.oti.uml.magicdraw.dynamicscripts, org.omg.oti.uml.json, org.omg.oti.uml.json.serialization, org.omg.oti.uml.core, org.omg.oti.uml.composite_structure_tree_analysis, org.omg.oti.uml.change_migration, org.omg.oti.uml.magicdraw.adapter }
+              access: r/o
+              class: imce.oti.mof.magicdraw.dynamicscripts.tiwg.ExportOTIDocumentSetConfiguration
+              method: doit
+          )
+      })
