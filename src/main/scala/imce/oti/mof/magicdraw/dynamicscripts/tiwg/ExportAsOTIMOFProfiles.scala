@@ -48,18 +48,27 @@ import com.nomagic.uml2.ext.magicdraw.mdprofiles.Profile
 import gov.nasa.jpl.dynamicScripts.DynamicScriptsTypes
 import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataResults
 import org.omg.oti.json.common.OTIPrimitiveTypes._
+import org.omg.oti.json.common._
 import org.omg.oti.json.uml.serialization.OTIJsonSerializationHelper
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper.MagicDrawOTIDocumentSetAdapterForDataProvider
 import org.omg.oti.magicdraw.uml.read.MagicDrawUML
 import org.omg.oti.mof.schema._
-import org.omg.oti.uml.read.api.{UMLStereotype}
+import org.omg.oti.uml._
+import org.omg.oti.uml.read.api.{UMLProperty, UMLStereotype}
 import org.omg.oti.uml.xmi.Document
 
 import scala.collection.immutable._
-import scala.{Option, StringContext}
-import scala.util.{Try}
+import scala.{Option, None, PartialFunction, Some, StringContext}
+import scala.util.{Failure, Success, Try}
 import scalaz._
 
+/**
+  * Export selected UML Profiles as OTI MOF Profiles, that is, the exported OTIMOFProfileResourceExtents
+  * will only have the UML Stereotypes & stereotype associations corresponding to an OTI MOF profile,
+  * which is a restricted kind of OMG UML 2.5 profile without profile-defined datatypes or classes.
+  *
+  * Everything outside the scope of an OTIMOFProfileResourceExtent is ignored
+  */
 object ExportAsOTIMOFProfiles {
 
   def doit
@@ -72,7 +81,8 @@ object ExportAsOTIMOFProfiles {
   = Utils.browserDynamicScript(
     p, ev, script, tree, node, top, selection,
     "exportAsOTIMOFProfile",
-    exportAsOTIMOFProfile)
+    exportAsOTIMOFProfile,
+    Utils.chooseOTIDocumentSetConfigurationAndPrimitiveTypesAndUMLMetamodel)
 
   def doit
   ( p: Project,
@@ -86,37 +96,109 @@ object ExportAsOTIMOFProfiles {
   = Utils.diagramDynamicScript(
     p, ev, script, dpe, triggerView, triggerElement, selection,
     "exportAsOTIMOFProfile",
-    exportAsOTIMOFProfile)
+    exportAsOTIMOFProfile,
+    Utils.chooseOTIDocumentSetConfigurationAndPrimitiveTypesAndUMLMetamodel)
 
   def exportAsOTIMOFProfile
-  ( p: Project, odsa: MagicDrawOTIDocumentSetAdapterForDataProvider )
-  : Document[MagicDrawUML] => OTIMOFResourceExtent
-  = {
-    val jHelper = OTIJsonSerializationHelper(odsa)
-    implicit val ops = odsa.otiAdapter.umlOps
+  ( p: Project,
+    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
+    resourceExtents: Set[OTIMOFResourceExtent])
+  : Try[Document[MagicDrawUML] => \/[Set[java.lang.Throwable], OTIMOFResourceExtent]]
+  = resourceExtents.find(Utils.PrimitiveTypes_IRI == _.resource.iri) match {
+    case Some(pt: OTIMOFLibraryResourceExtent) =>
+      resourceExtents.find(Utils.UML25_IRI == _.resource.iri) match {
+        case Some(mm: OTIMOFMetamodelResourceExtent) =>
+          Success(exportAsOTIMOFProfile(p, odsa, pt, mm) _)
+        case _ =>
+          Failure(new java.lang.IllegalArgumentException("No MD18 UML2.5 metamodel resource found!"))
+      }
+    case _ =>
+      Failure(new java.lang.IllegalArgumentException("No MD18 PrimitiveTypes library resource found!"))
+  }
 
+  def exportAsOTIMOFProfile
+  ( p: Project,
+    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
+    pt: OTIMOFLibraryResourceExtent,
+    umlR: OTIMOFMetamodelResourceExtent )
+  ( d: Document[MagicDrawUML] )
+  : \/[Set[java.lang.Throwable], OTIMOFResourceExtent]
+  = {
     val app = Application.getInstance()
     val guiLog = app.getGUILog
 
-    (d: Document[MagicDrawUML]) => {
+    val pf = OTIMOFProfile(Identification.ProfileIRI(OTI_URI.unwrap(d.info.packageURI)))
 
-      val ss
-      : Vector[UMLStereotype[MagicDrawUML]]
-      = Vector() // todo...
+    implicit val ops = odsa.otiAdapter.umlOps
+    import ops._
 
-      val app = Application.getInstance()
-      val guiLog = app.getGUILog
+    val ss
+    : Vector[UMLStereotype[MagicDrawUML]]
+    = d
+      .scope
+      .ownedType
+      .selectByKindOf { case mc: UMLStereotype[MagicDrawUML] => mc }
+      .to[Vector]
+      .sortBy(_.toolSpecific_uuid.get)
 
-      val pf = OTIMOFProfile(Identification.ProfileIRI(OTI_URI.unwrap(d.info.packageURI)))
-
-      val extent = OTIMOFProfileResourceExtent(
-        resource=pf
-      )
-
+    for {
+      s2mc <- getStereotype2ExtendedMetaclasses(ss, umlR)
+      ext = OTIMOFProfileResourceExtent(
+        resource = pf,
+        classifiers = ss.map { s =>
+          profile.Stereotype(
+            uuid = Identification.StereotypeUUID(TOOL_SPECIFIC_UUID.unwrap(s.toolSpecific_uuid.get)),
+            name = Common.Name(s.name.get))
+        },
+        extendedMetaclass = s2mc)
+    } yield {
       guiLog.log(s"Extent: ${d.info.packageURI}")
-
-      extent
+      ext
     }
+  }
+
+  def getStereotype2ExtendedMetaclasses
+  ( ss: Vector[UMLStereotype[MagicDrawUML]],
+    umlR: OTIMOFMetamodelResourceExtent )
+  : \/[Set[java.lang.Throwable], Vector[profile.Stereotype2ExtendedMetaclass]]
+  = ss.foldLeft[\/[Set[java.lang.Throwable], Vector[profile.Stereotype2ExtendedMetaclass]]](\/-(Vector())) {
+    case (acc1, s) =>
+      s.baseMetaProperties.foldLeft(acc1) {
+        case (acc2, baseP) =>
+          import Utils.VectorSemigroup
+          acc2 +++ getStereotypeBaseProperty2ExtendedMetaclass(s, baseP, umlR)
+      }
+  }
+
+  def getStereotypeBaseProperty2ExtendedMetaclass
+  ( s: UMLStereotype[MagicDrawUML],
+    baseP: UMLProperty[MagicDrawUML],
+    umlR: OTIMOFMetamodelResourceExtent )
+  : \/[Set[java.lang.Throwable], Vector[profile.Stereotype2ExtendedMetaclass]]
+  = baseP._type match {
+    case None =>
+      -\/(Set(
+        UMLError.illegalElementError[MagicDrawUML, UMLProperty[MagicDrawUML]](
+          s"Stereotype base property ${baseP.qualifiedName.get} should be typed by a metaclass",
+          Iterable(baseP))))
+    case Some(extMC) =>
+      import Utils.selectable
+
+      umlR
+        .classifiers
+        .select { case umlMC: metamodel.MetaClass => umlMC }
+        .find { umlMC => Common.Name.unwrap(umlMC.name) == extMC.name.get } match {
+        case None =>
+          -\/(Set(
+            UMLError.illegalElementError[MagicDrawUML, UMLProperty[MagicDrawUML]](
+              s"Stereotype base property ${baseP.qualifiedName.get} refers to an unknown metaclass ${extMC.qualifiedName.get}",
+              Iterable(baseP))))
+        case Some(umlMC) =>
+          \/-(Vector(
+            profile.Stereotype2ExtendedMetaclass(
+              extendingStereotype = Identification.StereotypeUUID(TOOL_SPECIFIC_UUID.unwrap(s.toolSpecific_uuid.get)),
+              extendedMetaclass = umlMC.uuid)))
+      }
   }
 
 }

@@ -69,6 +69,13 @@ import scala.Predef.{augmentString, require, refArrayOps, ArrowAssoc}
 import scala.util.{Failure, Success, Try}
 import scalaz._
 
+/**
+  * Export selected UML Packages as OTI MOF Metamodels, that is, the exported OTIMOFMetamodelResourceExtents
+  * will only have the UML Classes & Associations corresponding to an OTI MOF metamodel, which is a restricted
+  * kind of OMG MOF 2.5.1 CMOF metamodel.
+  *
+  * Everything outside the scope of an OTIMOFMetamodelResourceExtent is ignored
+  */
 object ExportAsOTIMOFMetamodels {
 
   def doit
@@ -81,7 +88,8 @@ object ExportAsOTIMOFMetamodels {
   = Utils.browserDynamicScript(
     p, ev, script, tree, node, top, selection,
     "exportAsOTIMOFMetamodel",
-    exportAsOTIMOFMetamodel)
+    exportAsOTIMOFMetamodel,
+    Utils.chooseOTIDocumentSetConfigurationAndPrimitiveTypes)
 
   def doit
   (p: Project,
@@ -95,100 +103,108 @@ object ExportAsOTIMOFMetamodels {
   = Utils.diagramDynamicScript(
     p, ev, script, dpe, triggerView, triggerElement, selection,
     "exportAsOTIMOFMetamodel",
-    exportAsOTIMOFMetamodel)
+    exportAsOTIMOFMetamodel,
+    Utils.chooseOTIDocumentSetConfigurationAndPrimitiveTypes)
 
   def exportAsOTIMOFMetamodel
   ( p: Project,
-    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider)
-  : Document[MagicDrawUML] => OTIMOFResourceExtent
+    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
+    resourceExtents: Set[OTIMOFResourceExtent])
+  : Try[Document[MagicDrawUML] => \/[Set[java.lang.Throwable], OTIMOFResourceExtent]]
+  = resourceExtents.find(Utils.PrimitiveTypes_IRI == _.resource.iri) match {
+    case Some(r: OTIMOFLibraryResourceExtent) =>
+      Success(exportAsOTIMOFMetamodel(p, odsa, r) _)
+    case _ =>
+      Failure(new java.lang.IllegalArgumentException("No MD18 PrimitiveTypes library resource found!"))
+  }
+
+  def exportAsOTIMOFMetamodel
+  ( p: Project,
+    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
+    primitiveTypes: OTIMOFLibraryResourceExtent)
+  ( d: Document[MagicDrawUML] )
+  : \/[Set[java.lang.Throwable], OTIMOFResourceExtent]
   = {
-    val jHelper = OTIJsonSerializationHelper(odsa)
     implicit val ops = odsa.otiAdapter.umlOps
     import ops._
+
+    val mcs
+    : Vector[UMLClass[MagicDrawUML]]
+    = d
+      .scope
+      .ownedType
+      .selectByKindOf { case mc: UMLClass[MagicDrawUML] => mc }
+      .to[Vector]
+      .sortBy(_.toolSpecific_uuid.get)
+
+    val mas
+    : Vector[UMLAssociation[MagicDrawUML]]
+    = d
+      .scope
+      .ownedType
+      .selectByKindOf { case mc: UMLAssociation[MagicDrawUML] => mc }
+      .to[Vector]
+      .sortBy(_.toolSpecific_uuid.get)
 
     val app = Application.getInstance()
     val guiLog = app.getGUILog
 
-    (d: Document[MagicDrawUML]) => {
+    val mm = OTIMOFMetamodel(Identification.MetamodelIRI(OTI_URI.unwrap(d.info.packageURI)))
 
-      val mcs
-      : Vector[UMLClass[MagicDrawUML]]
-      = d
-        .scope
-        .ownedType
-        .selectByKindOf { case mc: UMLClass[MagicDrawUML] => mc }
-        .to[Vector]
-        .sortBy(_.toolSpecific_uuid.get)
+    val extent = OTIMOFMetamodelResourceExtent(
+      resource = mm,
+      classifiers =
+        mcs.map { mc =>
+          metamodel.MetaClass(
+            uuid = Identification.MetaClassUUID(TOOL_SPECIFIC_UUID.unwrap(mc.toolSpecific_uuid.get)),
+            name = Common.Name(mc.name.get))
+        } ++
+          mas.map { ma =>
+            metamodel.MetaAssociation(
+              uuid = Identification.MetaAssociationUUID(TOOL_SPECIFIC_UUID.unwrap(ma.toolSpecific_uuid.get)),
+              name = Common.Name(ma.name.get))
+          },
+      associationEnds = mas.flatMap { ma =>
+        val ends = ma.getDirectedAssociationEnd
+        require(ends.isDefined, ma.qualifiedName.get)
+        val (source, target) = ends.get
 
-      val mas
-      : Vector[UMLAssociation[MagicDrawUML]]
-      = d
-        .scope
-        .ownedType
-        .selectByKindOf { case mc: UMLAssociation[MagicDrawUML] => mc }
-        .to[Vector]
-        .sortBy(_.toolSpecific_uuid.get)
+        Vector(
+          features.AssociationSourceEndProperty(
+            uuid = Identification.AssociationSourceEndUUID(TOOL_SPECIFIC_UUID.unwrap(source.toolSpecific_uuid.get)),
+            name = Common.Name(source.name.get)),
+          if (target.isComposite)
+            features.AssociationTargetEndCompositeProperty(
+              uuid = Identification.AssociationTargetEndUUID(TOOL_SPECIFIC_UUID.unwrap(target.toolSpecific_uuid.get)),
+              name = Common.Name(target.name.get))
+          else
+            features.AssociationTargetEndReferenceProperty(
+              uuid = Identification.AssociationTargetEndUUID(TOOL_SPECIFIC_UUID.unwrap(target.toolSpecific_uuid.get)),
+              name = Common.Name(target.name.get))
+        )
+      },
+      association2source = mas.map { ma =>
+        val ends = ma.getDirectedAssociationEnd
+        require(ends.isDefined, ma.qualifiedName.get)
+        val (source, _) = ends.get
+        metamodel.MetaAssociation2SourceEndProperty(
+          association = Identification.MetaAssociationUUID(TOOL_SPECIFIC_UUID.unwrap(ma.toolSpecific_uuid.get)),
+          sourceEnd = Identification.AssociationSourceEndUUID(TOOL_SPECIFIC_UUID.unwrap(source.toolSpecific_uuid.get))
+        )
+      },
+      association2Target = mas.map { ma =>
+        val ends = ma.getDirectedAssociationEnd
+        require(ends.isDefined, ma.qualifiedName.get)
+        val (_, target) = ends.get
+        metamodel.MetaAssociation2TargetEndProperty(
+          association = Identification.MetaAssociationUUID(TOOL_SPECIFIC_UUID.unwrap(ma.toolSpecific_uuid.get)),
+          targetEnd = Identification.AssociationTargetEndUUID(TOOL_SPECIFIC_UUID.unwrap(target.toolSpecific_uuid.get))
+        )
+      }
+    )
 
-      val app = Application.getInstance()
-      val guiLog = app.getGUILog
+    guiLog.log(s"Extent: ${d.info.packageURI}")
 
-      val mm = OTIMOFMetamodel(Identification.MetamodelIRI(OTI_URI.unwrap(d.info.packageURI)))
-
-      val extent = OTIMOFMetamodelResourceExtent(
-        resource = mm,
-        classifiers =
-          mcs.map { mc =>
-            metamodel.MetaClass(
-              uuid = Identification.MetaClassUUID(TOOL_SPECIFIC_UUID.unwrap(mc.toolSpecific_uuid.get)),
-              name = Common.Name(mc.name.get))
-          } ++
-            mas.map { ma =>
-              metamodel.MetaAssociation(
-                uuid = Identification.MetaAssociationUUID(TOOL_SPECIFIC_UUID.unwrap(ma.toolSpecific_uuid.get)),
-                name = Common.Name(ma.name.get))
-            },
-        associationEnds = mas.flatMap { ma =>
-          val ends = ma.getDirectedAssociationEnd
-          require(ends.isDefined, ma.qualifiedName.get)
-          val (source, target) = ends.get
-
-          Vector(
-            features.AssociationSourceEndProperty(
-              uuid = Identification.AssociationSourceEndUUID(TOOL_SPECIFIC_UUID.unwrap(source.toolSpecific_uuid.get)),
-              name = Common.Name(source.name.get)),
-            if (target.isComposite)
-              features.AssociationTargetEndCompositeProperty(
-                uuid = Identification.AssociationTargetEndUUID(TOOL_SPECIFIC_UUID.unwrap(target.toolSpecific_uuid.get)),
-                name = Common.Name(target.name.get))
-            else
-              features.AssociationTargetEndReferenceProperty(
-                uuid = Identification.AssociationTargetEndUUID(TOOL_SPECIFIC_UUID.unwrap(target.toolSpecific_uuid.get)),
-                name = Common.Name(target.name.get))
-          )
-        },
-        association2source = mas.map { ma =>
-          val ends = ma.getDirectedAssociationEnd
-          require(ends.isDefined, ma.qualifiedName.get)
-          val (source, _) = ends.get
-          metamodel.MetaAssociation2SourceEndProperty(
-            association = Identification.MetaAssociationUUID(TOOL_SPECIFIC_UUID.unwrap(ma.toolSpecific_uuid.get)),
-            sourceEnd = Identification.AssociationSourceEndUUID(TOOL_SPECIFIC_UUID.unwrap(source.toolSpecific_uuid.get))
-          )
-        },
-        association2Target = mas.map { ma =>
-          val ends = ma.getDirectedAssociationEnd
-          require(ends.isDefined, ma.qualifiedName.get)
-          val (_, target) = ends.get
-          metamodel.MetaAssociation2TargetEndProperty(
-            association = Identification.MetaAssociationUUID(TOOL_SPECIFIC_UUID.unwrap(ma.toolSpecific_uuid.get)),
-            targetEnd = Identification.AssociationTargetEndUUID(TOOL_SPECIFIC_UUID.unwrap(target.toolSpecific_uuid.get))
-          )
-        }
-      )
-
-      guiLog.log(s"Extent: ${d.info.packageURI}")
-
-      extent
-    }
+    \/-(extent)
   }
 }

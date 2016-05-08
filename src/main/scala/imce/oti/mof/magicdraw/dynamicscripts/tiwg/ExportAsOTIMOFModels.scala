@@ -56,10 +56,16 @@ import org.omg.oti.uml.read.api.UMLElement
 import org.omg.oti.uml.xmi.Document
 
 import scala.collection.immutable._
-import scala.{Option, StringContext}
-import scala.util.Try
+import scala.{Option, Some, StringContext}
+import scala.util.{Failure,Success,Try}
 import scalaz._
 
+/**
+  * Export selected UML Packages as OTI MOF Models.
+  * The intent is to make sure *everything* is accounted for in the exported OTIMOFModelResourceExtent
+  * such that the original UML Packages could be re-recrated without any loss of information
+  * from the OTIMOFModelResourceExtents.
+  */
 object ExportAsOTIMOFModels {
 
   def doit
@@ -72,7 +78,8 @@ object ExportAsOTIMOFModels {
   = Utils.browserDynamicScript(
     p, ev, script, tree, node, top, selection,
     "exportAsOTIMOFModel",
-    exportAsOTIMOFModel)
+    exportAsOTIMOFModel,
+    Utils.chooseOTIDocumentSetConfigurationAndPrimitiveTypesAndUMLMetamodelAndStandardProfile)
 
   def doit
   (p: Project,
@@ -86,46 +93,67 @@ object ExportAsOTIMOFModels {
   = Utils.diagramDynamicScript(
     p, ev, script, dpe, triggerView, triggerElement, selection,
     "exportAsOTIMOFModel",
-    exportAsOTIMOFModel)
+    exportAsOTIMOFModel,
+    Utils.chooseOTIDocumentSetConfigurationAndPrimitiveTypesAndUMLMetamodelAndStandardProfile)
 
   def exportAsOTIMOFModel
   ( p: Project,
-    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider)
-  : Document[MagicDrawUML] => OTIMOFResourceExtent
+    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
+    resourceExtents: Set[OTIMOFResourceExtent])
+  : Try[Document[MagicDrawUML] => \/[Set[java.lang.Throwable], OTIMOFResourceExtent]]
+  = resourceExtents.find(Utils.PrimitiveTypes_IRI == _.resource.iri) match {
+    case Some(pt: OTIMOFLibraryResourceExtent) =>
+      resourceExtents.find(Utils.UML25_IRI == _.resource.iri) match {
+        case Some(mm: OTIMOFMetamodelResourceExtent) =>
+          resourceExtents.find(Utils.StandardProfile_IRI == _.resource.iri) match {
+            case Some(pf: OTIMOFProfileResourceExtent) =>
+              Success(exportAsOTIMOFModel(p, odsa, pt, mm, pf) _)
+            case _ =>
+              Failure(new java.lang.IllegalArgumentException("No MD18 StandardProfile profile resource found!"))
+          }
+        case _ =>
+          Failure(new java.lang.IllegalArgumentException("No MD18 UML2.5 metamodel resource found!"))
+      }
+    case _ =>
+      Failure(new java.lang.IllegalArgumentException("No MD18 PrimitiveTypes library resource found!"))
+  }
+
+  def exportAsOTIMOFModel
+  ( p: Project,
+    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
+    primitiveTypesR: OTIMOFLibraryResourceExtent,
+    umlR: OTIMOFMetamodelResourceExtent,
+    standardProfileR: OTIMOFProfileResourceExtent )
+  ( d: Document[MagicDrawUML] )
+  : \/[Set[java.lang.Throwable], OTIMOFResourceExtent]
   = {
-    val jHelper = OTIJsonSerializationHelper(odsa)
     implicit val ops = odsa.otiAdapter.umlOps
+    //import ops._
+
+    val pExtent = d.extent match {
+      case ex: Set[UMLElement[MagicDrawUML]] =>
+        ex.par
+      case ex =>
+        ex.toSet.par
+    }
+
+    val elements
+    : Vector[model.ModelElement]
+    = pExtent.map(toModelElement).toVector
 
     val app = Application.getInstance()
     val guiLog = app.getGUILog
 
-    (d: Document[MagicDrawUML]) => {
+    val m = OTIMOFModel(Identification.ModelIRI(OTI_URI.unwrap(d.info.packageURI)))
 
-      val pExtent = d.extent match {
-        case ex: Set[UMLElement[MagicDrawUML]] =>
-          ex.par
-        case ex =>
-          ex.toSet.par
-      }
+    val extent = OTIMOFModelResourceExtent(
+      resource = m,
+      elements
+    )
 
-      val elements
-      : Vector[model.ModelElement]
-      = pExtent.map(toModelElement).toVector
+    guiLog.log(s"Extent: ${d.info.packageURI}")
 
-      val app = Application.getInstance()
-      val guiLog = app.getGUILog
-
-      val m = OTIMOFModel(Identification.ModelIRI(OTI_URI.unwrap(d.info.packageURI)))
-
-      val extent = OTIMOFModelResourceExtent(
-        resource=m,
-        elements
-      )
-
-      guiLog.log(s"Extent: ${d.info.packageURI}")
-
-      extent
-    }
+    \/-(extent)
   }
 
   def toModelElement

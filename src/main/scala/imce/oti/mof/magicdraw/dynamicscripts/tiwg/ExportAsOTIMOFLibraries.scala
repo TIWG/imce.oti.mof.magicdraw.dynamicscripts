@@ -67,6 +67,12 @@ import scala.util.{Failure, Success, Try}
 import scalaz.Scalaz._
 import scalaz._
 
+/**
+  * Export selected UML Packages as OTI MOF Libraries, that is, the exported OTIMOFLibraryResourceExtents
+  * will only have the UML DataTypes defined in the selected packages.
+  *
+  * Everything outside the scope of an OTIMOFLibraryResourceExtent is ignored
+  */
 object ExportAsOTIMOFLibraries {
 
   def doit
@@ -79,7 +85,8 @@ object ExportAsOTIMOFLibraries {
   = Utils.browserDynamicScript(
     p, ev, script, tree, node, top, selection,
     "exportAsOTIMOFLibrary",
-    exportAsOTIMOFLibrary)
+    exportAsOTIMOFLibrary,
+    Utils.chooseOTIDocumentSetConfigurationNoResources)
 
   def doit
   (p: Project,
@@ -93,12 +100,14 @@ object ExportAsOTIMOFLibraries {
   = Utils.diagramDynamicScript(
     p, ev, script, dpe, triggerView, triggerElement, selection,
     "exportAsOTIMOFLibrary",
-    exportAsOTIMOFLibrary)
-
+    exportAsOTIMOFLibrary,
+    Utils.chooseOTIDocumentSetConfigurationNoResources)
 
   def exportAsOTIMOFLibrary
-  (p: Project, odsa: MagicDrawOTIDocumentSetAdapterForDataProvider)
-  : Document[MagicDrawUML] => OTIMOFResourceExtent
+  ( p: Project,
+    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
+    resourceExtents: Set[OTIMOFResourceExtent])
+  : Try[Document[MagicDrawUML] => \/[Set[java.lang.Throwable], OTIMOFResourceExtent]]
   = {
     val jHelper = OTIJsonSerializationHelper(odsa)
     implicit val ops = odsa.otiAdapter.umlOps
@@ -106,7 +115,7 @@ object ExportAsOTIMOFLibraries {
     val app = Application.getInstance()
     val guiLog = app.getGUILog
 
-    (d: Document[MagicDrawUML]) => {
+    Success((d: Document[MagicDrawUML]) => {
 
       val pExtent = d.extent match {
         case ex: Set[UMLElement[MagicDrawUML]] =>
@@ -127,8 +136,8 @@ object ExportAsOTIMOFLibraries {
 
       guiLog.log(s"Extent: ${d.info.packageURI}")
 
-      extent
-    }
+      \/-(extent)
+    })
   }
 
   val primitiveTypeMap

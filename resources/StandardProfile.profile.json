@@ -1,0 +1,221 @@
+{
+  "resource" : {
+    "iri" : "http://www.omg.org/spec/UML/20131001/StandardProfile"
+  },
+  "classifiers" : [ {
+    "uuid" : "0c7166f3-f63b-4bdc-97fa-c7c3aacf8a47",
+    "name" : "Refine"
+  }, {
+    "uuid" : "10831034-6ada-4c32-a870-6e449714511c",
+    "name" : "Framework"
+  }, {
+    "uuid" : "16c32fcc-6a69-4a3f-a0ac-c2558d5d16e1",
+    "name" : "Implement"
+  }, {
+    "uuid" : "20286d7b-aa87-46e4-9d78-0f6aac959792",
+    "name" : "ImplementationClass"
+  }, {
+    "uuid" : "2f640fe5-2835-47aa-9952-07e34245fadf",
+    "name" : "File"
+  }, {
+    "uuid" : "42911f7e-795f-4049-aebc-6c59ef3f5476",
+    "name" : "Trace"
+  }, {
+    "uuid" : "430cec08-df99-45fc-8c97-f16d11961022",
+    "name" : "Focus"
+  }, {
+    "uuid" : "531ee19a-238f-4e01-aca7-718bde1b74c8",
+    "name" : "Source"
+  }, {
+    "uuid" : "5a4d07ba-d3a1-49e8-a881-9ecc4007f5f6",
+    "name" : "Executable"
+  }, {
+    "uuid" : "6f08598f-181a-43ad-9e5e-b7e9fd4d7299",
+    "name" : "Library"
+  }, {
+    "uuid" : "72441747-0c07-45b6-b5ec-0f0eccc44745",
+    "name" : "Subsystem"
+  }, {
+    "uuid" : "73ff5ff9-a1c1-477b-841f-7f353f9a33d8",
+    "name" : "Type"
+  }, {
+    "uuid" : "92177607-4512-4bf7-a548-582a62420a08",
+    "name" : "Auxiliary"
+  }, {
+    "uuid" : "983e31aa-479e-428f-930c-5a78afce013a",
+    "name" : "Script"
+  }, {
+    "uuid" : "9b266f98-d945-4559-b69e-c337d7e0a5dd",
+    "name" : "Destroy"
+  }, {
+    "uuid" : "a3c172dd-043e-497c-81fe-bfc8bed8ff65",
+    "name" : "Send"
+  }, {
+    "uuid" : "a99ef565-4db6-4e42-b8bc-978f35a1467a",
+    "name" : "Document"
+  }, {
+    "uuid" : "ab360441-cc3f-4406-9610-c9ef75895bfb",
+    "name" : "Derive"
+  }, {
+    "uuid" : "acf84210-7b3f-4108-9d16-5e0f1a60378d",
+    "name" : "Specification"
+  }, {
+    "uuid" : "bb60db4e-c87d-42b1-b87b-4e97d099ef9d",
+    "name" : "Call"
+  }, {
+    "uuid" : "bbef0e6e-7544-4583-abc5-c6567d9cedb2",
+    "name" : "Create"
+  }, {
+    "uuid" : "c80949d7-863e-4823-a1db-2e5a12a51a6e",
+    "name" : "Realization"
+  }, {
+    "uuid" : "d0af83fc-2889-43e0-be31-ff35a6e6de63",
+    "name" : "Utility"
+  }, {
+    "uuid" : "d1a79e78-84d1-4375-86a2-d185e5ab8504",
+    "name" : "Service"
+  }, {
+    "uuid" : "d761ff25-e5d6-4e8e-9516-b1e68f55dbc5",
+    "name" : "Responsibility"
+  }, {
+    "uuid" : "da84f61d-2245-4f5c-b429-300e88123929",
+    "name" : "ModelLibrary"
+  }, {
+    "uuid" : "dc985e3d-00a5-4c5a-80df-cf92d36d2cc0",
+    "name" : "Metamodel"
+  }, {
+    "uuid" : "e324ef32-7b0a-4224-b6c6-7555273461b7",
+    "name" : "Entity"
+  }, {
+    "uuid" : "ef21f720-9c85-4b29-b096-78268c44eb20",
+    "name" : "SystemModel"
+  }, {
+    "uuid" : "f50661eb-637c-4eb0-8159-10397ee4235a",
+    "name" : "Instantiate"
+  }, {
+    "uuid" : "f688c9cb-0d6a-41c0-a013-58aeb7da4d42",
+    "name" : "Process"
+  }, {
+    "uuid" : "f8ce78e4-e135-4927-b58e-38285b724700",
+    "name" : "Metaclass"
+  }, {
+    "uuid" : "fd89ca6b-3ada-48d1-a768-42907f2f5e96",
+    "name" : "BuildComponent"
+  } ],
+  "attributes" : [ ],
+  "featureLowerBounds" : [ ],
+  "featureUpperBounds" : [ ],
+  "featureOrdering" : [ ],
+  "attribute2type" : [ ],
+  "importedLibraries" : [ ],
+  "exendedMetamodels" : [ ],
+  "generalizations" : [ ],
+  "extendedMetaclass" : [ {
+    "extendingStereotype" : "0c7166f3-f63b-4bdc-97fa-c7c3aacf8a47",
+    "extendedMetaclass" : "d16c550c-048f-4aac-bd66-fd50079d607a"
+  }, {
+    "extendingStereotype" : "10831034-6ada-4c32-a870-6e449714511c",
+    "extendedMetaclass" : "ebdb0cb4-7f73-41d8-90bf-d95430f4edbc"
+  }, {
+    "extendingStereotype" : "16c32fcc-6a69-4a3f-a0ac-c2558d5d16e1",
+    "extendedMetaclass" : "afffaf74-bf8c-4a32-b9ac-c56627ca8f89"
+  }, {
+    "extendingStereotype" : "20286d7b-aa87-46e4-9d78-0f6aac959792",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "2f640fe5-2835-47aa-9952-07e34245fadf",
+    "extendedMetaclass" : "417d3965-2a26-4672-aec2-6a4a7665fbdc"
+  }, {
+    "extendingStereotype" : "42911f7e-795f-4049-aebc-6c59ef3f5476",
+    "extendedMetaclass" : "d16c550c-048f-4aac-bd66-fd50079d607a"
+  }, {
+    "extendingStereotype" : "430cec08-df99-45fc-8c97-f16d11961022",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "531ee19a-238f-4e01-aca7-718bde1b74c8",
+    "extendedMetaclass" : "417d3965-2a26-4672-aec2-6a4a7665fbdc"
+  }, {
+    "extendingStereotype" : "5a4d07ba-d3a1-49e8-a881-9ecc4007f5f6",
+    "extendedMetaclass" : "417d3965-2a26-4672-aec2-6a4a7665fbdc"
+  }, {
+    "extendingStereotype" : "6f08598f-181a-43ad-9e5e-b7e9fd4d7299",
+    "extendedMetaclass" : "417d3965-2a26-4672-aec2-6a4a7665fbdc"
+  }, {
+    "extendingStereotype" : "72441747-0c07-45b6-b5ec-0f0eccc44745",
+    "extendedMetaclass" : "afffaf74-bf8c-4a32-b9ac-c56627ca8f89"
+  }, {
+    "extendingStereotype" : "73ff5ff9-a1c1-477b-841f-7f353f9a33d8",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "92177607-4512-4bf7-a548-582a62420a08",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "983e31aa-479e-428f-930c-5a78afce013a",
+    "extendedMetaclass" : "417d3965-2a26-4672-aec2-6a4a7665fbdc"
+  }, {
+    "extendingStereotype" : "9b266f98-d945-4559-b69e-c337d7e0a5dd",
+    "extendedMetaclass" : "68a9f393-e83d-4b47-9585-3d0d25bd91fc"
+  }, {
+    "extendingStereotype" : "a3c172dd-043e-497c-81fe-bfc8bed8ff65",
+    "extendedMetaclass" : "9f058065-4935-4239-8fa9-21118d173945"
+  }, {
+    "extendingStereotype" : "a99ef565-4db6-4e42-b8bc-978f35a1467a",
+    "extendedMetaclass" : "417d3965-2a26-4672-aec2-6a4a7665fbdc"
+  }, {
+    "extendingStereotype" : "ab360441-cc3f-4406-9610-c9ef75895bfb",
+    "extendedMetaclass" : "d16c550c-048f-4aac-bd66-fd50079d607a"
+  }, {
+    "extendingStereotype" : "acf84210-7b3f-4108-9d16-5e0f1a60378d",
+    "extendedMetaclass" : "83a0eb27-86d5-4c20-8eaf-27ea87062136"
+  }, {
+    "extendingStereotype" : "bb60db4e-c87d-42b1-b87b-4e97d099ef9d",
+    "extendedMetaclass" : "9f058065-4935-4239-8fa9-21118d173945"
+  }, {
+    "extendingStereotype" : "bbef0e6e-7544-4583-abc5-c6567d9cedb2",
+    "extendedMetaclass" : "68a9f393-e83d-4b47-9585-3d0d25bd91fc"
+  }, {
+    "extendingStereotype" : "bbef0e6e-7544-4583-abc5-c6567d9cedb2",
+    "extendedMetaclass" : "9f058065-4935-4239-8fa9-21118d173945"
+  }, {
+    "extendingStereotype" : "c80949d7-863e-4823-a1db-2e5a12a51a6e",
+    "extendedMetaclass" : "83a0eb27-86d5-4c20-8eaf-27ea87062136"
+  }, {
+    "extendingStereotype" : "d0af83fc-2889-43e0-be31-ff35a6e6de63",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "d1a79e78-84d1-4375-86a2-d185e5ab8504",
+    "extendedMetaclass" : "afffaf74-bf8c-4a32-b9ac-c56627ca8f89"
+  }, {
+    "extendingStereotype" : "d761ff25-e5d6-4e8e-9516-b1e68f55dbc5",
+    "extendedMetaclass" : "9f058065-4935-4239-8fa9-21118d173945"
+  }, {
+    "extendingStereotype" : "da84f61d-2245-4f5c-b429-300e88123929",
+    "extendedMetaclass" : "ebdb0cb4-7f73-41d8-90bf-d95430f4edbc"
+  }, {
+    "extendingStereotype" : "dc985e3d-00a5-4c5a-80df-cf92d36d2cc0",
+    "extendedMetaclass" : "7d823d5d-5bb0-47e7-b488-97e21384bd47"
+  }, {
+    "extendingStereotype" : "e324ef32-7b0a-4224-b6c6-7555273461b7",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "ef21f720-9c85-4b29-b096-78268c44eb20",
+    "extendedMetaclass" : "7d823d5d-5bb0-47e7-b488-97e21384bd47"
+  }, {
+    "extendingStereotype" : "f50661eb-637c-4eb0-8159-10397ee4235a",
+    "extendedMetaclass" : "9f058065-4935-4239-8fa9-21118d173945"
+  }, {
+    "extendingStereotype" : "f688c9cb-0d6a-41c0-a013-58aeb7da4d42",
+    "extendedMetaclass" : "afffaf74-bf8c-4a32-b9ac-c56627ca8f89"
+  }, {
+    "extendingStereotype" : "f8ce78e4-e135-4927-b58e-38285b724700",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "fd89ca6b-3ada-48d1-a768-42907f2f5e96",
+    "extendedMetaclass" : "afffaf74-bf8c-4a32-b9ac-c56627ca8f89"
+  } ],
+  "stereotype2attribute" : [ ],
+  "stereotype2associationEndMetaClassProperty" : [ ],
+  "stereotype2associationEndStereotypeProperty" : [ ],
+  "importedProfiles" : [ ],
+  "type" : "OTIMOFProfileResourceExtent"
+}
