@@ -67,35 +67,81 @@ import play.api.libs.json._
 import scala.collection.JavaConversions._
 import scala.collection.immutable._
 import scala.io.{Codec, Source}
-import scala.{Boolean, Int, Long, None, Option, PartialFunction, Some, StringContext, Unit}
+import scala.language.higherKinds
+import scala.{Boolean, Int, Long, None, Option, PartialFunction, Some, StringContext, Tuple2, Unit}
 import scala.Predef.{ArrowAssoc, String, augmentString, refArrayOps, require}
 import scala.util.{Failure, Success, Try}
 import scalaz._
 import Scalaz._
+import scala.collection.GenTraversable
+import scala.collection.generic.CanBuildFrom
 
 object Utils {
 
-  class SelectableVector[U]( s: Vector[U]) {
+  // for Scala parallel collections.
+  val poolSize: Int = 4
 
-    def select[V](pf: PartialFunction[U, V]): Vector[V] =
-      s.flatMap { u => if (pf.isDefinedAt(u)) Some(pf(u)) else None }
+  /**
+    * OCL-like select (filter) + collect (downcast)
+    *
+    * OCL:
+    * {{{
+    * s->select(oclIsKindOf(V))->collect(oclAsType(V))
+    * }}}
+    *
+    * Scala:
+    *
+    * {{{
+    * import Utils.selectable
+    *
+    * s.select { case v: V => v }
+    * }}}
+    *
+    * @param s A collection of type C[U]
+    * @tparam U A type of elements
+    * @tparam C A collection type
+    */
+  class Selectable[U, C[X <: U] <: GenTraversable[X]]( s: C[U] ) {
+
+    def select[V <: U]
+    (pf: PartialFunction[U, V])
+    (implicit bf: CanBuildFrom[C[U], V, C[V]])
+    : C[V]
+    = {
+      val b = bf(s)
+      s.foreach { u: U =>
+        if (pf.isDefinedAt(u)) {
+          b += pf(u)
+        }
+        ()
+      }
+      b.result
+    }
 
   }
 
-  implicit def selectable[U](s: Vector[U]): SelectableVector[U] = new SelectableVector(s)
+  implicit def selectable[U, C[X <: U] <: GenTraversable[X]](s: C[U])
+  : Selectable[U, C]
+  = new Selectable[U, C](s)
 
-  implicit def VectorSemigroup[T]: Semigroup[Vector[T]] =
-    Semigroup.instance(_ ++ _)
+  implicit def IterableSemigroup[T]
+  : Semigroup[Iterable[T]]
+  = Semigroup.instance(_ ++ _)
+
+  implicit def VectorSemigroup[T]
+  : Semigroup[Vector[T]]
+  = Semigroup.instance(_ ++ _)
 
   val PrimitiveTypes_IRI = Identification.LibraryIRI("http://www.omg.org/spec/PrimitiveTypes/20131001")
   val UML25_IRI = Identification.MetamodelIRI("http://www.omg.org/spec/UML/20131001")
   val StandardProfile_IRI = Identification.ProfileIRI("http://www.omg.org/spec/UML/20131001/StandardProfile")
+  val SysMLProfile_IRI = Identification.ProfileIRI("http://www.omg.org/spec/SysML/20131201/SysML")
 
   val resourcesPath: String = "dynamicScripts/imce.oti.mof.magicdraw.dynamicscripts/resources/"
 
-  val MagicDraw18_UML25Implementation_DocumentSetConfiguration_File
+  val MagicDraw18_implementation_DocumentSetConfiguration_File
   : String
-  = resourcesPath+"MagicDraw18-UML25-implementation.documentSetConfiguration.json"
+  = resourcesPath+ "MagicDraw18-implementation.documentSetConfiguration.json"
 
   val MagicDraw18_UML25Implementation_PrimitiveTypes_File
   : String
@@ -105,13 +151,17 @@ object Utils {
   : String
   = resourcesPath+ "UML.metamodel.json"
 
+  val MagicDraw18_SysML14Implementation_SysML_File
+  : String
+  = resourcesPath+"SysML.profile.json"
+
   val MagicDraw18_UML25Implementation_StandardProfile_File
   : String
   = resourcesPath+"StandardProfile.profile.json"
 
   type OTIDocument2MOFResource =
   (Project, MagicDrawOTIDocumentSetAdapterForDataProvider, Set[OTIMOFResourceExtent]) =>
-    Try[Document[MagicDrawUML] => \/[Set[java.lang.Throwable], OTIMOFResourceExtent]]
+    Try[Document[MagicDrawUML] => \&/[Vector[java.lang.Throwable], OTIMOFResourceExtent]]
 
   def diagramDynamicScript
   ( p: Project,
@@ -123,7 +173,7 @@ object Utils {
     selection: java.util.Collection[PresentationElement],
     actionName: String,
     action: OTIDocument2MOFResource,
-    chooser: () => Try[Option[(File, Set[OTIMOFResourceExtent])]])
+    chooser: () => Try[Option[(Vector[File], Set[OTIMOFResourceExtent])]])
   : Try[Option[MagicDrawValidationDataResults]]
   = chooser().flatMap {
 
@@ -134,24 +184,36 @@ object Utils {
       guiLog.log(s"$actionName cancelled")
       Success(None)
 
-    case Some((otiDocumentConfigurationFile, resourceExtents)) =>
+    case Some((otiDocumentConfigurationFiles, resourceExtents)) =>
+
       val otiDocumentConfigurationContents
-      : String
-      = Source.fromFile(otiDocumentConfigurationFile)(Codec.UTF8).getLines.mkString
+      : Vector[String]
+      = otiDocumentConfigurationFiles.map(Source.fromFile(_)(Codec.UTF8).getLines.mkString).toVector
 
-      val otiDocumentConfigurationJson
-      = Json.parse(otiDocumentConfigurationContents)
+      val otiDocumentConfigurationJs
+      : Vector[JsResult[OTIDocumentSetConfiguration]]
+      = otiDocumentConfigurationContents.map { s =>
+        Json.parse(s).validate[OTIDocumentSetConfiguration]
+      }
 
-      otiDocumentConfigurationJson.validate[OTIDocumentSetConfiguration] match {
-
-        case e: JsError =>
+      val otiDocumentConfigurationsOrErrors
+      : Try[Vector[OTIDocumentSetConfiguration]]
+      = otiDocumentConfigurationJs.foldLeft[Try[Vector[OTIDocumentSetConfiguration]]](Success(Vector())) {
+        case (_, e: JsError) =>
           Failure(new java.lang.IllegalArgumentException(e.toString))
 
-        case JsSuccess(otiDocumentConfigurationSet, _) =>
+        case (Failure(t), _) =>
+          Failure(t)
+
+        case (Success(acc), JsSuccess(otiDocumentConfigurationSet, _)) =>
+          Success(acc :+ otiDocumentConfigurationSet)
+      }
+
+      otiDocumentConfigurationsOrErrors.flatMap { otiDocumentConfigurations =>
 
           OTIHelper
             .toTry(
-              MagicDrawOTIHelper.getOTIMagicDrawDataAdapter(p, otiDocumentConfigurationSet),
+              MagicDrawOTIHelper.getOTIMagicDrawDataAdapter(p, otiDocumentConfigurations),
               (oa: MagicDrawOTIDataAdapter) => {
                 val app = Application.getInstance()
                 val guiLog = app.getGUILog
@@ -199,7 +261,7 @@ object Utils {
                   er <- exportAsOTIMOFResource(
                     p, odsa, config,
                     selectedSpecificationRootPackages,
-                    resourceExtents, cb)
+                    resourceExtents, cb, actionName)
                 } yield er
 
                 result.a match {
@@ -222,7 +284,7 @@ object Utils {
     selection: java.util.Collection[_ <: Package],
     actionName: String,
     action: OTIDocument2MOFResource,
-    chooser: () => Try[Option[(File, Set[OTIMOFResourceExtent])]])
+    chooser: () => Try[Option[(Vector[File], Set[OTIMOFResourceExtent])]])
   : Try[Option[MagicDrawValidationDataResults]]
   = chooser().flatMap {
 
@@ -233,24 +295,36 @@ object Utils {
       guiLog.log(s"$actionName cancelled")
       Success(None)
 
-    case Some((otiDocumentConfigurationFile, resourceExtents)) =>
+    case Some((otiDocumentConfigurationFiles, resourceExtents)) =>
+
       val otiDocumentConfigurationContents
-      : String
-      = Source.fromFile(otiDocumentConfigurationFile)(Codec.UTF8).getLines.mkString
+      : Vector[String]
+      = otiDocumentConfigurationFiles.map(Source.fromFile(_)(Codec.UTF8).getLines.mkString).toVector
 
-      val otiDocumentConfigurationJson
-      = Json.parse(otiDocumentConfigurationContents)
+      val otiDocumentConfigurationJs
+      : Vector[JsResult[OTIDocumentSetConfiguration]]
+      = otiDocumentConfigurationContents.map { s =>
+        Json.parse(s).validate[OTIDocumentSetConfiguration]
+      }
 
-      otiDocumentConfigurationJson.validate[OTIDocumentSetConfiguration] match {
-
-        case e: JsError =>
+      val otiDocumentConfigurationsOrErrors
+      : Try[Vector[OTIDocumentSetConfiguration]]
+      = otiDocumentConfigurationJs.foldLeft[Try[Vector[OTIDocumentSetConfiguration]]](Success(Vector())) {
+        case (_, e: JsError) =>
           Failure(new java.lang.IllegalArgumentException(e.toString))
 
-        case JsSuccess(otiDocumentConfigurationSet, _) =>
+        case (Failure(t), _) =>
+          Failure(t)
+
+        case (Success(acc), JsSuccess(otiDocumentConfigurationSet, _)) =>
+          Success(acc :+ otiDocumentConfigurationSet)
+      }
+
+      otiDocumentConfigurationsOrErrors.flatMap { otiDocumentConfigurations =>
 
           OTIHelper
             .toTry(
-              MagicDrawOTIHelper.getOTIMagicDrawDataAdapter(p, otiDocumentConfigurationSet),
+              MagicDrawOTIHelper.getOTIMagicDrawDataAdapter(p, otiDocumentConfigurations),
               (oa: MagicDrawOTIDataAdapter) => {
                 val app = Application.getInstance()
                 val guiLog = app.getGUILog
@@ -295,7 +369,7 @@ object Utils {
                     er <- exportAsOTIMOFResource(
                       p, odsa, config,
                       selectedSpecificationRootPackages,
-                      resourceExtents, cb)
+                      resourceExtents, cb, actionName)
                   } yield er
 
                 result.onlyThisOrThat match {
@@ -319,7 +393,8 @@ object Utils {
     config: OTIDocumentSetConfiguration,
     selectedSpecificationRootPackages: Set[UMLPackage[MagicDrawUML]],
     resourceExtents: Set[OTIMOFResourceExtent],
-    toDocumentExtent: Document[MagicDrawUML] => \/[Set[java.lang.Throwable], OTIMOFResourceExtent])
+    toDocumentExtent: Document[MagicDrawUML] => \&/[Vector[java.lang.Throwable], OTIMOFResourceExtent],
+    actionName: String)
   : Try[Option[MagicDrawValidationDataResults]]
   = {
 
@@ -348,74 +423,69 @@ object Utils {
     var size: Int = 0
     var nb: Int = 0
 
-    val d0: Try[Unit] = Success(())
+    val errors = new scala.collection.mutable.ListBuffer[java.lang.Throwable]()
 
-    val dN
-    : Try[Unit]
-    = (d0 /: odsa.ds.allDocuments ) {
-      case (Failure(t), _) =>
-        Failure(t)
+    odsa.ds.allDocuments.foreach { d =>
 
-      case (Success(_), d) =>
-        val pkg = d.scope
-        if (selectedSpecificationRootPackages.contains(pkg)) {
-          nb = nb + 1
-          size = size + d.extent.size
-          val e0: Long = java.lang.System.currentTimeMillis()
+      val pkg = d.scope
+      if (selectedSpecificationRootPackages.contains(pkg)) {
+        nb = nb + 1
+        size = size + d.extent.size
+        val e0: Long = java.lang.System.currentTimeMillis()
 
-          val dN = toDocumentExtent(d)
+        val dN = toDocumentExtent(d)
 
-          val e1: Long = java.lang.System.currentTimeMillis()
+        val e1: Long = java.lang.System.currentTimeMillis()
+        System.out.println(
+          s"$actionName.extent(${pkg.qualifiedName.get} with ${d.extent.size} elements) " +
+            s"in ${prettyFiniteDuration(e1 - e0, TimeUnit.MILLISECONDS)}")
+
+        dN.b.foreach { dR =>
+          val dj = Json.toJson(dR)
+
+          val e2: Long = java.lang.System.currentTimeMillis()
           System.out.println(
-            s"ExportAsOTIMOFMetamodels.extent(${pkg.qualifiedName.get} with ${d.extent.size} elements) " +
-              s"in ${prettyFiniteDuration(e1 - e0, TimeUnit.MILLISECONDS)}")
+            s"$actionName.toJson(${pkg.qualifiedName.get} with ${d.extent.size} elements) " +
+              s"in ${prettyFiniteDuration(e2 - e1, TimeUnit.MILLISECONDS)}")
 
-          dN match {
-            case -\/(errors) =>
-              Failure(errors.head)
+          val dRelativePath: String = Tag.unwrap(d.info.documentURL).stripPrefix("http://")
+          val entry = new java.util.zip.ZipEntry(dRelativePath)
+          zos.putNextEntry(entry)
 
-            case \/-(dR) =>
-              val dj = Json.toJson(dR)
+          val s = Json.prettyPrint(dj)
+          zos.write(s.getBytes(java.nio.charset.Charset.forName("UTF-8")))
 
-              val e2: Long = java.lang.System.currentTimeMillis()
-              System.out.println(
-                s"ExportAsOTIMOFMetamodels.toJson(${pkg.qualifiedName.get} with ${d.extent.size} elements) " +
-                  s"in ${prettyFiniteDuration(e2 - e1, TimeUnit.MILLISECONDS)}")
+          zos.closeEntry()
 
-              val dRelativePath: String = Tag.unwrap(d.info.documentURL).stripPrefix("http://")
-              val entry = new java.util.zip.ZipEntry(dRelativePath)
-              zos.putNextEntry(entry)
+          val e3: Long = java.lang.System.currentTimeMillis()
+          System.out.println(
+            s"$actionName.pretty(${pkg.qualifiedName.get} with ${d.extent.size} elements) " +
+              s"in ${prettyFiniteDuration(e3 - e2, TimeUnit.MILLISECONDS)}")
+        }
 
-              val s = Json.prettyPrint(dj)
-              zos.write(s.getBytes(java.nio.charset.Charset.forName("UTF-8")))
-
-              zos.closeEntry()
-
-              val e3: Long = java.lang.System.currentTimeMillis()
-              System.out.println(
-                s"ExportAsOTIMOFMetamodels.pretty(${pkg.qualifiedName.get} with ${d.extent.size} elements) " +
-                  s"in ${prettyFiniteDuration(e3 - e2, TimeUnit.MILLISECONDS)}")
-
-              Success(())
-          }
-        } else
-          Success(())
+        dN.a.map { dErrors =>
+          errors ++= dErrors
+        }
+      }
     }
 
     zos.close()
     val tN = java.lang.System.currentTimeMillis()
     System.out.println(
-      s"ExportAsOTIMOFMetamodels.overall ($nb OTI document packages totalling $size elements) " +
+      s"$actionName.overall ($nb OTI document packages totalling $size elements) " +
         s"in ${prettyFiniteDuration(tN - t0, TimeUnit.MILLISECONDS)}")
 
     System.out.println(s"zip: $jsonExportZipURI")
 
-    dN match {
-      case Failure(t) =>
-        Failure(t)
-      case Success(_) =>
-        Success(None)
+    guiLog.log(s"Exported OTI MOF Model as $jsonExportZipURI")
+    guiLog.log(s"${errors.size} errors")
+
+    System.err.println(s"${errors.size} errors")
+    errors.foreach { e =>
+      System.err.println(e)
     }
+
+    Success(None)
   }
 
   def chooseJsonFile
@@ -449,7 +519,7 @@ object Utils {
   ()
   : Try[Option[File]]
   = chooseJsonFile(
-    MagicDraw18_UML25Implementation_DocumentSetConfiguration_File,
+    MagicDraw18_implementation_DocumentSetConfiguration_File,
     () =>
       MDUML.chooseFile(
         title="Select an OTIDocumentSetConfiguration file",
@@ -458,8 +528,12 @@ object Utils {
 
   def chooseOTIDocumentSetConfigurationNoResources
   ()
-  : Try[Option[(File, Set[OTIMOFResourceExtent])]]
-  = chooseOTIDocumentSetConfigurationFile().map { _.map((_, Set.empty[OTIMOFResourceExtent])) }
+  : Try[Option[(Vector[File], Set[OTIMOFResourceExtent])]]
+  = chooseOTIDocumentSetConfigurationFile().map { f =>
+    f.map { ff =>
+      Tuple2(Vector(ff), Set.empty[OTIMOFResourceExtent])
+    }
+  }
 
   def choosePrimitiveTypes
   ()
@@ -474,7 +548,7 @@ object Utils {
 
   def chooseOTIDocumentSetConfigurationAndPrimitiveTypes
   ()
-  : Try[Option[(File, Set[OTIMOFResourceExtent])]]
+  : Try[Option[(Vector[File], Set[OTIMOFResourceExtent])]]
   = for {
     f1 <- chooseOTIDocumentSetConfigurationFile()
     f2 <- choosePrimitiveTypes()
@@ -482,7 +556,7 @@ object Utils {
     for {
       ff1 <- f1
       ff2 <- f2
-    } yield (ff1, Set[OTIMOFResourceExtent](ff2))
+    } yield (Vector(ff1), Set[OTIMOFResourceExtent](ff2))
 
   def chooseUMLMetamodel
   ()
@@ -497,7 +571,7 @@ object Utils {
 
   def chooseOTIDocumentSetConfigurationAndPrimitiveTypesAndUMLMetamodel
   ()
-  : Try[Option[(File, Set[OTIMOFResourceExtent])]]
+  : Try[Option[(Vector[File], Set[OTIMOFResourceExtent])]]
   = for {
     f1 <- chooseOTIDocumentSetConfigurationFile()
     f2 <- choosePrimitiveTypes()
@@ -507,7 +581,7 @@ object Utils {
       ff1 <- f1
       ff2 <- f2
       ff3 <- f3
-    } yield (ff1, Set[OTIMOFResourceExtent](ff2, ff3))
+    } yield (Vector(ff1), Set[OTIMOFResourceExtent](ff2, ff3))
 
   def chooseStandardProfile
   ()
@@ -522,7 +596,7 @@ object Utils {
 
   def chooseOTIDocumentSetConfigurationAndPrimitiveTypesAndUMLMetamodelAndStandardProfile
   ()
-  : Try[Option[(File, Set[OTIMOFResourceExtent])]]
+  : Try[Option[(Vector[File], Set[OTIMOFResourceExtent])]]
   = for {
     f1 <- chooseOTIDocumentSetConfigurationFile()
     f2 <- choosePrimitiveTypes()
@@ -534,7 +608,41 @@ object Utils {
       ff2 <- f2
       ff3 <- f3
       ff4 <- f4
-    } yield (ff1, Set[OTIMOFResourceExtent](ff2, ff3, ff4))
+    } yield (Vector(ff1), Set[OTIMOFResourceExtent](ff2, ff3, ff4))
+
+  def chooseSysML
+  ()
+  : Try[Option[OTIMOFProfileResourceExtent]]
+  = chooseJsonFile(
+    MagicDraw18_SysML14Implementation_SysML_File,
+    () =>MDUML.chooseFile(
+      title="Select the MD18 SysML profile json file",
+      description= "*.profile.json",
+      fileNameSuffix=".profile.json"))
+    .flatMap(loadOTIMOFResourceExtent[OTIMOFProfileResourceExtent])
+
+  def chooseOTIDocumentSetConfigurationForUserModel
+  ()
+  : Try[Option[(Vector[File], Set[OTIMOFResourceExtent])]]
+  = for {
+    f1 <- chooseOTIDocumentSetConfigurationFile()
+    f2 <- MDUML.chooseFile(
+      title="Select an OTIDocumentSetConfiguration file for exporting model packages",
+      description= "*.documentSetConfiguration.json",
+      fileNameSuffix=".documentSetConfiguration.json")
+    f3 <- choosePrimitiveTypes()
+    f4 <- chooseUMLMetamodel()
+    f5 <- chooseStandardProfile()
+    f6 <- chooseSysML()
+  } yield
+    for {
+      ff1 <- f1
+      ff2 <- f2
+      ff3 <- f3
+      ff4 <- f4
+      ff5 <- f5
+      ff6 <- f6
+    } yield (Vector(ff1, ff2), Set[OTIMOFResourceExtent](ff3, ff4, ff5, ff6))
 
   def addSpecificationRootPackageForDataProvider
   (odsa: MagicDrawOTIDocumentSetAdapterForDataProvider)

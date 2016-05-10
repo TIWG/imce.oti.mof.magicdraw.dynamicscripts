@@ -107,7 +107,7 @@ object ExportAsOTIMOFLibraries {
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
     resourceExtents: Set[OTIMOFResourceExtent])
-  : Try[Document[MagicDrawUML] => \/[Set[java.lang.Throwable], OTIMOFResourceExtent]]
+  : Try[Document[MagicDrawUML] => \&/[Vector[java.lang.Throwable], OTIMOFResourceExtent]]
   = {
     val jHelper = OTIJsonSerializationHelper(odsa)
     implicit val ops = odsa.otiAdapter.umlOps
@@ -131,12 +131,12 @@ object ExportAsOTIMOFLibraries {
 
       val extent = OTIMOFLibraryResourceExtent(
         resource=lib,
-        classifiers=pExtent.flatMap(toDatatypeClassifier(_)).toVector
+        classifiers=pExtent.flatMap(toDatatypeClassifier(_)).toVector.sortBy(_.name)
       )
 
       guiLog.log(s"Extent: ${d.info.packageURI}")
 
-      \/-(extent)
+      \&/.That(extent)
     })
   }
 

@@ -3,27 +3,27 @@
     "iri" : "http://www.omg.org/spec/PrimitiveTypes/20131001"
   },
   "classifiers" : [ {
-    "uuid" : "1ee98d1c-54b2-468e-8070-3c02c2c54ce2",
-    "name" : "String",
-    "datatypeMapDefinition" : "xsd:string",
-    "type" : "PrimitiveDataType"
-  }, {
-    "uuid" : "b7e63cbf-5b04-49c1-bff0-2a8592e0aa0f",
+    "uuid" : "b462dd99-1c03-4bcb-bc92-887a69aa8ca3",
     "name" : "Boolean",
     "datatypeMapDefinition" : "xsd:boolean",
     "type" : "PrimitiveDataType"
   }, {
-    "uuid" : "70b26e00-eb55-4a85-bfae-2fc3c210981a",
-    "name" : "Real",
-    "datatypeMapDefinition" : "xsd:double",
-    "type" : "PrimitiveDataType"
-  }, {
-    "uuid" : "05f0e762-2de1-4296-a184-08b03824fde4",
+    "uuid" : "47294366-bf75-4ca3-bf28-47057e157596",
     "name" : "Integer",
     "datatypeMapDefinition" : "xsd:integer",
     "type" : "PrimitiveDataType"
   }, {
-    "uuid" : "6a7018c5-da5d-4d77-84a8-9469c9596917",
+    "uuid" : "bffc7fce-3760-4c5a-a538-1783a58c3af3",
+    "name" : "Real",
+    "datatypeMapDefinition" : "xsd:double",
+    "type" : "PrimitiveDataType"
+  }, {
+    "uuid" : "b2ba8c2c-d236-4d7b-b7f3-212782702ea1",
+    "name" : "String",
+    "datatypeMapDefinition" : "xsd:string",
+    "type" : "PrimitiveDataType"
+  }, {
+    "uuid" : "fa8dfc03-3d7f-4e30-8c27-75e2958fc8be",
     "name" : "UnlimitedNatural",
     "datatypeMapDefinition" : "xsd:string",
     "type" : "PrimitiveDataType"

@@ -1,0 +1,587 @@
+{
+  "resource" : {
+    "iri" : "http://www.omg.org/spec/SysML/20131201/SysML"
+  },
+  "classifiers" : [ {
+    "uuid" : "3dacadbb-d483-48d8-be09-b9f1d85ecaf6",
+    "name" : "AcceptChangeStructuralFeatureEventAction"
+  }, {
+    "uuid" : "fae2f589-2a5b-4259-8c4e-0bff38df2ee4",
+    "name" : "Actuator"
+  }, {
+    "uuid" : "700c2dff-b848-492a-b098-ed3875c82103",
+    "name" : "AdjunctProperty"
+  }, {
+    "uuid" : "05bfdf93-1b6a-49a1-a22d-fc731a45cc72",
+    "name" : "Allocate"
+  }, {
+    "uuid" : "968ecd0b-4383-4ad5-b8d9-dc7078af660b",
+    "name" : "AllocateActivityPartition"
+  }, {
+    "uuid" : "b8bc876c-6921-4bd2-a5a6-959227fb0349",
+    "name" : "Allocated"
+  }, {
+    "uuid" : "016b0327-3e27-4b8b-a4fb-f31714cd5718",
+    "name" : "BasicInterval"
+  }, {
+    "uuid" : "6c214aaf-f03a-4e70-a3a8-63c437e82a39",
+    "name" : "BindingConnector"
+  }, {
+    "uuid" : "ad343ce9-d3b0-48e0-ba06-66419e280cd2",
+    "name" : "Block"
+  }, {
+    "uuid" : "899f9db8-c598-4717-a4f5-e0ee8d6eb5dd",
+    "name" : "BlockHierarchy"
+  }, {
+    "uuid" : "85fef711-b69c-4217-bec6-e0ced91fc992",
+    "name" : "BoundReference"
+  }, {
+    "uuid" : "78be1133-35b7-4859-b4e9-7db793810013",
+    "name" : "Boundary system"
+  }, {
+    "uuid" : "8b2742b2-c72b-4c27-b747-7ef46eaf8014",
+    "name" : "ChangeStructuralFeatureEvent"
+  }, {
+    "uuid" : "f2c6010a-134e-49a0-ba6e-26873d2afad3",
+    "name" : "ClassifierBehaviorProperty"
+  }, {
+    "uuid" : "a45be341-759d-449e-965d-bfa32c9a8ca5",
+    "name" : "Conform"
+  }, {
+    "uuid" : "836852ab-2883-42d4-a3b0-0191e5899f1a",
+    "name" : "ConnectorProperty"
+  }, {
+    "uuid" : "d9d6d9bd-b7b3-4e94-af26-3a53842bc127",
+    "name" : "ConstraintBlock"
+  }, {
+    "uuid" : "6108cc31-5c89-4ccc-a5a1-a567900a6d68",
+    "name" : "ContextDiagram"
+  }, {
+    "uuid" : "c99b3a86-75ae-4279-8474-3bcfc5b9fb28",
+    "name" : "Continuous"
+  }, {
+    "uuid" : "0d9fdd85-e9d8-4426-8e8d-72378f8fce54",
+    "name" : "ControlOperator"
+  }, {
+    "uuid" : "a99280ae-ab17-4bb7-891a-8350eb6d9d01",
+    "name" : "Copy"
+  }, {
+    "uuid" : "14b3dd7b-e569-488a-82f6-83ea416b5e81",
+    "name" : "Deprecated"
+  }, {
+    "uuid" : "bb755c15-beff-4394-8509-25dda02e2309",
+    "name" : "DeriveReqt"
+  }, {
+    "uuid" : "028718d4-9ad5-482b-9df1-ed44cf14f4d6",
+    "name" : "Diagram Description"
+  }, {
+    "uuid" : "128c8f5e-58d9-4b1b-a9d0-01d569ceb64e",
+    "name" : "DirectedFeature"
+  }, {
+    "uuid" : "b2d5c9df-09db-41a3-9ed4-5bbc629fba9d",
+    "name" : "DirectedRelationshipPropertyPath"
+  }, {
+    "uuid" : "fbbc3bcb-b307-4303-8ea2-246c5466021b",
+    "name" : "Discrete"
+  }, {
+    "uuid" : "b94adbd4-8d4f-4b96-82bc-4947eab216bb",
+    "name" : "DistributedProperty"
+  }, {
+    "uuid" : "9a90f554-225c-4806-a6da-210a8bc41e98",
+    "name" : "Domain"
+  }, {
+    "uuid" : "aabe7f6f-a90f-4a71-8570-c62c393025da",
+    "name" : "ElementGroup"
+  }, {
+    "uuid" : "eb86cc3c-b6d6-4e9b-aa0a-4bd3813c7841",
+    "name" : "ElementPropertyPath"
+  }, {
+    "uuid" : "e40c84c2-987d-4d14-b3fc-a80beaadfe78",
+    "name" : "EndPathMultiplicity"
+  }, {
+    "uuid" : "cbd69be4-919e-4c37-998b-67276d4c2e9b",
+    "name" : "Environmental effect"
+  }, {
+    "uuid" : "13a8f628-f6a4-4143-ab01-0129d1f23112",
+    "name" : "Essential"
+  }, {
+    "uuid" : "49c774d0-9af9-42e0-8b34-a69808a26dfe",
+    "name" : "Expose"
+  }, {
+    "uuid" : "b5408689-b082-4bd5-85b6-1ec2ab6fdc9b",
+    "name" : "External"
+  }, {
+    "uuid" : "45ca2765-a805-4803-bcfa-86877f1edc95",
+    "name" : "External system"
+  }, {
+    "uuid" : "a31b9b57-d412-460e-8d0e-29248b7757d2",
+    "name" : "FlowPort"
+  }, {
+    "uuid" : "eba5c135-941a-4b61-a585-1f05f4c31a8b",
+    "name" : "FlowProperty"
+  }, {
+    "uuid" : "e492b75c-c3dd-472a-9174-68cd6960e296",
+    "name" : "FlowSpecification"
+  }, {
+    "uuid" : "780d5f47-4a17-46e8-b5c1-aedadd61dc06",
+    "name" : "FullPort"
+  }, {
+    "uuid" : "d54d90bb-a5e1-4be0-9403-a1d394000ddd",
+    "name" : "InterfaceBlock"
+  }, {
+    "uuid" : "c756fa4c-9601-4831-b447-b2899715fa4a",
+    "name" : "Interval"
+  }, {
+    "uuid" : "438625fa-538d-426a-b621-86b15157e3a4",
+    "name" : "InvocationOnNestedPortAction"
+  }, {
+    "uuid" : "82d215dc-46a0-4b78-a7b1-d927f03600f1",
+    "name" : "ItemFlow"
+  }, {
+    "uuid" : "8a20c16e-2831-480d-8815-48482c7c00d1",
+    "name" : "NestedConnectorEnd"
+  }, {
+    "uuid" : "a2821dfc-9f95-4aee-91d2-bb30466c1185",
+    "name" : "NoBuffer"
+  }, {
+    "uuid" : "1dd2fa57-24dc-41ef-a12e-bcf081ce9c49",
+    "name" : "Normal"
+  }, {
+    "uuid" : "1a46f5d5-0da6-4593-8777-95cda77162d2",
+    "name" : "Optional"
+  }, {
+    "uuid" : "5151252d-9dcb-485d-b7c1-b5f7ccde364b",
+    "name" : "Overwrite"
+  }, {
+    "uuid" : "f1237deb-2988-4bbe-a750-f660542e0b89",
+    "name" : "ParticipantProperty"
+  }, {
+    "uuid" : "66de0968-3d14-4949-860b-67d3c8aa2321",
+    "name" : "Probability"
+  }, {
+    "uuid" : "03d52997-4495-40bc-a92c-aa34a75d0b71",
+    "name" : "Problem"
+  }, {
+    "uuid" : "341c1bd6-9e21-4e6f-8511-0edd0c6d2786",
+    "name" : "PropertySpecificType"
+  }, {
+    "uuid" : "9e97f52f-ae62-4e03-9774-aef24382898c",
+    "name" : "ProxyPort"
+  }, {
+    "uuid" : "33932c28-9071-4095-964f-ed6c7c22c80a",
+    "name" : "Rate"
+  }, {
+    "uuid" : "dd440a27-26ff-4cc4-a9f4-248433f78754",
+    "name" : "Rationale"
+  }, {
+    "uuid" : "b7e6a61f-581f-49c5-ac2e-e7d604bb87e1",
+    "name" : "Refine"
+  }, {
+    "uuid" : "be3cc173-1a3f-4e18-9367-7efb58688b1c",
+    "name" : "Requirement"
+  }, {
+    "uuid" : "6b64b47a-3dcd-4afd-b73f-67dda66963c2",
+    "name" : "RequirementRelated"
+  }, {
+    "uuid" : "f6d67408-d566-424f-988c-02321a1d3214",
+    "name" : "Satisfy"
+  }, {
+    "uuid" : "dcfea899-9d11-43e5-8a27-38a6b58433e4",
+    "name" : "Sensor"
+  }, {
+    "uuid" : "d47a5106-3823-4288-966b-e271632fda1c",
+    "name" : "Stakeholder"
+  }, {
+    "uuid" : "2955d064-0131-4402-8858-79df5de9cbfc",
+    "name" : "Subsystem"
+  }, {
+    "uuid" : "18b3c387-4144-42b5-a030-5ae6936f68d5",
+    "name" : "SwimLaneDiagram"
+  }, {
+    "uuid" : "42cabde2-e843-43c4-ae2c-e8e64751d612",
+    "name" : "System"
+  }, {
+    "uuid" : "4234cdc3-da02-439c-8b95-b42cdb40def2",
+    "name" : "System context"
+  }, {
+    "uuid" : "2b9d83d5-1ac4-460e-8f49-801e17bbd648",
+    "name" : "System process"
+  }, {
+    "uuid" : "bb5597d2-8061-4b2e-83ef-8ebe68869acf",
+    "name" : "TestCase"
+  }, {
+    "uuid" : "01db2e83-4ef0-4632-bd42-ce2e1ec2958b",
+    "name" : "Trace"
+  }, {
+    "uuid" : "1d853c41-b639-42e3-8d6a-a604245076aa",
+    "name" : "TriggerOnNestedPort"
+  }, {
+    "uuid" : "a05b1522-71e9-4f9f-8353-b11a93079fea",
+    "name" : "Uniform"
+  }, {
+    "uuid" : "52ec730d-abed-4269-9c50-91578fd87453",
+    "name" : "User system"
+  }, {
+    "uuid" : "97d7b40a-6979-41ac-8e03-06b50a8d213e",
+    "name" : "ValueType"
+  }, {
+    "uuid" : "77286961-34f0-493f-892f-1848fed6737b",
+    "name" : "Verify"
+  }, {
+    "uuid" : "68683caf-6d3d-4b34-b6db-31ac5553b4ec",
+    "name" : "View"
+  }, {
+    "uuid" : "22d8be59-3bd4-442d-8ce1-a20aa0c0f609",
+    "name" : "Viewpoint"
+  }, {
+    "uuid" : "8f7cb8d4-61b8-416d-8a48-04321c7f54f1",
+    "name" : "businessRequirement"
+  }, {
+    "uuid" : "84fb87d0-1428-4118-9463-919a8af4b93a",
+    "name" : "designConstraint"
+  }, {
+    "uuid" : "b0a687fd-b5bb-4828-8f34-d278e5ebf3f7",
+    "name" : "diagramUsage"
+  }, {
+    "uuid" : "712fce03-f97b-4a43-8947-0fbb2990a658",
+    "name" : "effbd"
+  }, {
+    "uuid" : "ea9ad9c9-35f9-4692-aef7-c50f714227b2",
+    "name" : "extendedRequirement"
+  }, {
+    "uuid" : "f9e4516c-3498-4bfe-89ee-dd41d91955c1",
+    "name" : "functionalRequirement"
+  }, {
+    "uuid" : "c139abac-706b-47f6-abeb-c948130b5d94",
+    "name" : "interfaceRequirement"
+  }, {
+    "uuid" : "6ec9cc7d-d94e-4224-90b0-462750c595a5",
+    "name" : "moe"
+  }, {
+    "uuid" : "34879243-f47b-49be-bd58-d6b1b2c69a43",
+    "name" : "nonStreaming"
+  }, {
+    "uuid" : "2c7738a2-9d17-4dea-8af2-e5b05450d639",
+    "name" : "objectiveFunction"
+  }, {
+    "uuid" : "8c7ac346-009c-46b0-8595-814aab985589",
+    "name" : "performanceRequirement"
+  }, {
+    "uuid" : "c765d924-63cb-4516-9be8-91a3bd7ee042",
+    "name" : "physicalRequirement"
+  }, {
+    "uuid" : "5eadf31d-811d-42fc-be20-d118f4e39955",
+    "name" : "streaming"
+  }, {
+    "uuid" : "812fc349-d8e9-467d-8ff9-fa83e7b3dfc7",
+    "name" : "usabilityRequirement"
+  } ],
+  "attributes" : [ ],
+  "featureLowerBounds" : [ ],
+  "featureUpperBounds" : [ ],
+  "featureOrdering" : [ ],
+  "attribute2type" : [ ],
+  "importedLibraries" : [ ],
+  "exendedMetamodels" : [ ],
+  "generalizations" : [ ],
+  "extendedMetaclass" : [ {
+    "extendingStereotype" : "3dacadbb-d483-48d8-be09-b9f1d85ecaf6",
+    "extendedMetaclass" : "7a9fac9c-8861-48c0-b41e-9955b5dcdc10"
+  }, {
+    "extendingStereotype" : "fae2f589-2a5b-4259-8c4e-0bff38df2ee4",
+    "extendedMetaclass" : "78db8391-86ca-47d2-b701-c852d56c92d2"
+  }, {
+    "extendingStereotype" : "700c2dff-b848-492a-b098-ed3875c82103",
+    "extendedMetaclass" : "22410663-7c97-49ba-9a48-3bdbef943078"
+  }, {
+    "extendingStereotype" : "05bfdf93-1b6a-49a1-a22d-fc731a45cc72",
+    "extendedMetaclass" : "d16c550c-048f-4aac-bd66-fd50079d607a"
+  }, {
+    "extendingStereotype" : "968ecd0b-4383-4ad5-b8d9-dc7078af660b",
+    "extendedMetaclass" : "bad152b5-c668-46e9-9089-7165c5dc01be"
+  }, {
+    "extendingStereotype" : "b8bc876c-6921-4bd2-a5a6-959227fb0349",
+    "extendedMetaclass" : "328357af-c828-4dab-831c-42a23c2bb4b9"
+  }, {
+    "extendingStereotype" : "016b0327-3e27-4b8b-a4fb-f31714cd5718",
+    "extendedMetaclass" : "22410663-7c97-49ba-9a48-3bdbef943078"
+  }, {
+    "extendingStereotype" : "6c214aaf-f03a-4e70-a3a8-63c437e82a39",
+    "extendedMetaclass" : "e63aebaf-b960-430e-a8ba-0b85fbe73120"
+  }, {
+    "extendingStereotype" : "ad343ce9-d3b0-48e0-ba06-66419e280cd2",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "899f9db8-c598-4717-a4f5-e0ee8d6eb5dd",
+    "extendedMetaclass" : "da6c59e4-5853-4436-9654-7d74e5a94305"
+  }, {
+    "extendingStereotype" : "78be1133-35b7-4859-b4e9-7db793810013",
+    "extendedMetaclass" : "78db8391-86ca-47d2-b701-c852d56c92d2"
+  }, {
+    "extendingStereotype" : "8b2742b2-c72b-4c27-b747-7ef46eaf8014",
+    "extendedMetaclass" : "822998b1-e22d-4131-9239-91bcd11c7271"
+  }, {
+    "extendingStereotype" : "f2c6010a-134e-49a0-ba6e-26873d2afad3",
+    "extendedMetaclass" : "22410663-7c97-49ba-9a48-3bdbef943078"
+  }, {
+    "extendingStereotype" : "a45be341-759d-449e-965d-bfa32c9a8ca5",
+    "extendedMetaclass" : "cd882fdf-4229-4a34-b61f-34dce9e5a930"
+  }, {
+    "extendingStereotype" : "a45be341-759d-449e-965d-bfa32c9a8ca5",
+    "extendedMetaclass" : "7b53e134-cc53-43e9-a99c-c8b18d4573be"
+  }, {
+    "extendingStereotype" : "836852ab-2883-42d4-a3b0-0191e5899f1a",
+    "extendedMetaclass" : "22410663-7c97-49ba-9a48-3bdbef943078"
+  }, {
+    "extendingStereotype" : "d9d6d9bd-b7b3-4e94-af26-3a53842bc127",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "6108cc31-5c89-4ccc-a5a1-a567900a6d68",
+    "extendedMetaclass" : "da6c59e4-5853-4436-9654-7d74e5a94305"
+  }, {
+    "extendingStereotype" : "0d9fdd85-e9d8-4426-8e8d-72378f8fce54",
+    "extendedMetaclass" : "ef831e63-df77-4d34-a0c1-a49587fdff23"
+  }, {
+    "extendingStereotype" : "0d9fdd85-e9d8-4426-8e8d-72378f8fce54",
+    "extendedMetaclass" : "1e74b77e-4a47-4117-b31f-ed3f15090c03"
+  }, {
+    "extendingStereotype" : "14b3dd7b-e569-488a-82f6-83ea416b5e81",
+    "extendedMetaclass" : "30b30ee7-f202-410b-9275-b76d5a153048"
+  }, {
+    "extendingStereotype" : "14b3dd7b-e569-488a-82f6-83ea416b5e81",
+    "extendedMetaclass" : "0cc111e7-0898-416c-8c29-a8a6c021a377"
+  }, {
+    "extendingStereotype" : "14b3dd7b-e569-488a-82f6-83ea416b5e81",
+    "extendedMetaclass" : "38f44278-16a5-4f96-b791-45fdcaa4baea"
+  }, {
+    "extendingStereotype" : "14b3dd7b-e569-488a-82f6-83ea416b5e81",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "14b3dd7b-e569-488a-82f6-83ea416b5e81",
+    "extendedMetaclass" : "cd882fdf-4229-4a34-b61f-34dce9e5a930"
+  }, {
+    "extendingStereotype" : "14b3dd7b-e569-488a-82f6-83ea416b5e81",
+    "extendedMetaclass" : "c66c2691-fe7e-4850-98dc-989d50e62a60"
+  }, {
+    "extendingStereotype" : "14b3dd7b-e569-488a-82f6-83ea416b5e81",
+    "extendedMetaclass" : "22410663-7c97-49ba-9a48-3bdbef943078"
+  }, {
+    "extendingStereotype" : "028718d4-9ad5-482b-9df1-ed44cf14f4d6",
+    "extendedMetaclass" : "da6c59e4-5853-4436-9654-7d74e5a94305"
+  }, {
+    "extendingStereotype" : "128c8f5e-58d9-4b1b-a9d0-01d569ceb64e",
+    "extendedMetaclass" : "edf78cb3-22b4-4b27-af40-3c78736e011b"
+  }, {
+    "extendingStereotype" : "b2d5c9df-09db-41a3-9ed4-5bbc629fba9d",
+    "extendedMetaclass" : "7e366595-8cbb-4c9a-a675-0a3c5a11abd7"
+  }, {
+    "extendingStereotype" : "b94adbd4-8d4f-4b96-82bc-4947eab216bb",
+    "extendedMetaclass" : "22410663-7c97-49ba-9a48-3bdbef943078"
+  }, {
+    "extendingStereotype" : "9a90f554-225c-4806-a6da-210a8bc41e98",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "aabe7f6f-a90f-4a71-8570-c62c393025da",
+    "extendedMetaclass" : "7f428929-bab9-4bb7-baac-a553c37719c0"
+  }, {
+    "extendingStereotype" : "eb86cc3c-b6d6-4e9b-aa0a-4bd3813c7841",
+    "extendedMetaclass" : "27431c73-177d-441e-980a-80af9d6dcf4a"
+  }, {
+    "extendingStereotype" : "e40c84c2-987d-4d14-b3fc-a80beaadfe78",
+    "extendedMetaclass" : "22410663-7c97-49ba-9a48-3bdbef943078"
+  }, {
+    "extendingStereotype" : "cbd69be4-919e-4c37-998b-67276d4c2e9b",
+    "extendedMetaclass" : "78db8391-86ca-47d2-b701-c852d56c92d2"
+  }, {
+    "extendingStereotype" : "13a8f628-f6a4-4143-ab01-0129d1f23112",
+    "extendedMetaclass" : "b6806bbd-3c18-403c-abcf-b7b78d92527e"
+  }, {
+    "extendingStereotype" : "49c774d0-9af9-42e0-8b34-a69808a26dfe",
+    "extendedMetaclass" : "7b53e134-cc53-43e9-a99c-c8b18d4573be"
+  }, {
+    "extendingStereotype" : "b5408689-b082-4bd5-85b6-1ec2ab6fdc9b",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "45ca2765-a805-4803-bcfa-86877f1edc95",
+    "extendedMetaclass" : "78db8391-86ca-47d2-b701-c852d56c92d2"
+  }, {
+    "extendingStereotype" : "a31b9b57-d412-460e-8d0e-29248b7757d2",
+    "extendedMetaclass" : "73583c17-3712-4a18-88d1-ea1c7f0a56af"
+  }, {
+    "extendingStereotype" : "eba5c135-941a-4b61-a585-1f05f4c31a8b",
+    "extendedMetaclass" : "22410663-7c97-49ba-9a48-3bdbef943078"
+  }, {
+    "extendingStereotype" : "e492b75c-c3dd-472a-9174-68cd6960e296",
+    "extendedMetaclass" : "8628dff8-4b5e-4f51-9569-ba5bf25950b2"
+  }, {
+    "extendingStereotype" : "780d5f47-4a17-46e8-b5c1-aedadd61dc06",
+    "extendedMetaclass" : "73583c17-3712-4a18-88d1-ea1c7f0a56af"
+  }, {
+    "extendingStereotype" : "c756fa4c-9601-4831-b447-b2899715fa4a",
+    "extendedMetaclass" : "22410663-7c97-49ba-9a48-3bdbef943078"
+  }, {
+    "extendingStereotype" : "438625fa-538d-426a-b621-86b15157e3a4",
+    "extendedMetaclass" : "558191c3-f26b-4bc8-9bb5-a0a7c70546af"
+  }, {
+    "extendingStereotype" : "82d215dc-46a0-4b78-a7b1-d927f03600f1",
+    "extendedMetaclass" : "7ad1e57b-41ac-4ec4-a4f7-5e328a4f0413"
+  }, {
+    "extendingStereotype" : "8a20c16e-2831-480d-8815-48482c7c00d1",
+    "extendedMetaclass" : "5cde493e-ac0c-4476-bc78-f781bd8ff9d9"
+  }, {
+    "extendingStereotype" : "a2821dfc-9f95-4aee-91d2-bb30466c1185",
+    "extendedMetaclass" : "6f228ec8-75c6-4d73-b4f3-2cb28cfcf568"
+  }, {
+    "extendingStereotype" : "1dd2fa57-24dc-41ef-a12e-bcf081ce9c49",
+    "extendedMetaclass" : "22410663-7c97-49ba-9a48-3bdbef943078"
+  }, {
+    "extendingStereotype" : "1a46f5d5-0da6-4593-8777-95cda77162d2",
+    "extendedMetaclass" : "a5877fd2-7512-40f0-bd42-47c4fe32b423"
+  }, {
+    "extendingStereotype" : "5151252d-9dcb-485d-b7c1-b5f7ccde364b",
+    "extendedMetaclass" : "6f228ec8-75c6-4d73-b4f3-2cb28cfcf568"
+  }, {
+    "extendingStereotype" : "f1237deb-2988-4bbe-a750-f660542e0b89",
+    "extendedMetaclass" : "22410663-7c97-49ba-9a48-3bdbef943078"
+  }, {
+    "extendingStereotype" : "66de0968-3d14-4949-860b-67d3c8aa2321",
+    "extendedMetaclass" : "8b4a79e8-4bba-4c91-8e97-4eef0667502b"
+  }, {
+    "extendingStereotype" : "66de0968-3d14-4949-860b-67d3c8aa2321",
+    "extendedMetaclass" : "5b92059f-d4a2-47a1-8f7d-f414bba6ec9b"
+  }, {
+    "extendingStereotype" : "03d52997-4495-40bc-a92c-aa34a75d0b71",
+    "extendedMetaclass" : "7f428929-bab9-4bb7-baac-a553c37719c0"
+  }, {
+    "extendingStereotype" : "341c1bd6-9e21-4e6f-8511-0edd0c6d2786",
+    "extendedMetaclass" : "83a0eb27-86d5-4c20-8eaf-27ea87062136"
+  }, {
+    "extendingStereotype" : "9e97f52f-ae62-4e03-9774-aef24382898c",
+    "extendedMetaclass" : "73583c17-3712-4a18-88d1-ea1c7f0a56af"
+  }, {
+    "extendingStereotype" : "33932c28-9071-4095-964f-ed6c7c22c80a",
+    "extendedMetaclass" : "a5877fd2-7512-40f0-bd42-47c4fe32b423"
+  }, {
+    "extendingStereotype" : "33932c28-9071-4095-964f-ed6c7c22c80a",
+    "extendedMetaclass" : "5b92059f-d4a2-47a1-8f7d-f414bba6ec9b"
+  }, {
+    "extendingStereotype" : "33932c28-9071-4095-964f-ed6c7c22c80a",
+    "extendedMetaclass" : "6f228ec8-75c6-4d73-b4f3-2cb28cfcf568"
+  }, {
+    "extendingStereotype" : "dd440a27-26ff-4cc4-a9f4-248433f78754",
+    "extendedMetaclass" : "7f428929-bab9-4bb7-baac-a553c37719c0"
+  }, {
+    "extendingStereotype" : "b7e6a61f-581f-49c5-ac2e-e7d604bb87e1",
+    "extendedMetaclass" : "d16c550c-048f-4aac-bd66-fd50079d607a"
+  }, {
+    "extendingStereotype" : "be3cc173-1a3f-4e18-9367-7efb58688b1c",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "6b64b47a-3dcd-4afd-b73f-67dda66963c2",
+    "extendedMetaclass" : "328357af-c828-4dab-831c-42a23c2bb4b9"
+  }, {
+    "extendingStereotype" : "dcfea899-9d11-43e5-8a27-38a6b58433e4",
+    "extendedMetaclass" : "78db8391-86ca-47d2-b701-c852d56c92d2"
+  }, {
+    "extendingStereotype" : "d47a5106-3823-4288-966b-e271632fda1c",
+    "extendedMetaclass" : "83a0eb27-86d5-4c20-8eaf-27ea87062136"
+  }, {
+    "extendingStereotype" : "2955d064-0131-4402-8858-79df5de9cbfc",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "18b3c387-4144-42b5-a030-5ae6936f68d5",
+    "extendedMetaclass" : "da6c59e4-5853-4436-9654-7d74e5a94305"
+  }, {
+    "extendingStereotype" : "42cabde2-e843-43c4-ae2c-e8e64751d612",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "4234cdc3-da02-439c-8b95-b42cdb40def2",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "2b9d83d5-1ac4-460e-8f49-801e17bbd648",
+    "extendedMetaclass" : "b6806bbd-3c18-403c-abcf-b7b78d92527e"
+  }, {
+    "extendingStereotype" : "2b9d83d5-1ac4-460e-8f49-801e17bbd648",
+    "extendedMetaclass" : "3c0bd22d-7d75-4f34-84ea-ecead7b6d0af"
+  }, {
+    "extendingStereotype" : "bb5597d2-8061-4b2e-83ef-8ebe68869acf",
+    "extendedMetaclass" : "ef831e63-df77-4d34-a0c1-a49587fdff23"
+  }, {
+    "extendingStereotype" : "bb5597d2-8061-4b2e-83ef-8ebe68869acf",
+    "extendedMetaclass" : "1e74b77e-4a47-4117-b31f-ed3f15090c03"
+  }, {
+    "extendingStereotype" : "01db2e83-4ef0-4632-bd42-ce2e1ec2958b",
+    "extendedMetaclass" : "d16c550c-048f-4aac-bd66-fd50079d607a"
+  }, {
+    "extendingStereotype" : "1d853c41-b639-42e3-8d6a-a604245076aa",
+    "extendedMetaclass" : "a19d1449-fea2-47ad-82ed-320b229e8bba"
+  }, {
+    "extendingStereotype" : "a05b1522-71e9-4f9f-8353-b11a93079fea",
+    "extendedMetaclass" : "22410663-7c97-49ba-9a48-3bdbef943078"
+  }, {
+    "extendingStereotype" : "52ec730d-abed-4269-9c50-91578fd87453",
+    "extendedMetaclass" : "78db8391-86ca-47d2-b701-c852d56c92d2"
+  }, {
+    "extendingStereotype" : "97d7b40a-6979-41ac-8e03-06b50a8d213e",
+    "extendedMetaclass" : "c66c2691-fe7e-4850-98dc-989d50e62a60"
+  }, {
+    "extendingStereotype" : "68683caf-6d3d-4b34-b6db-31ac5553b4ec",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "68683caf-6d3d-4b34-b6db-31ac5553b4ec",
+    "extendedMetaclass" : "ebdb0cb4-7f73-41d8-90bf-d95430f4edbc"
+  }, {
+    "extendingStereotype" : "22d8be59-3bd4-442d-8ce1-a20aa0c0f609",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "8f7cb8d4-61b8-416d-8a48-04321c7f54f1",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "84fb87d0-1428-4118-9463-919a8af4b93a",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "b0a687fd-b5bb-4828-8f34-d278e5ebf3f7",
+    "extendedMetaclass" : "da6c59e4-5853-4436-9654-7d74e5a94305"
+  }, {
+    "extendingStereotype" : "712fce03-f97b-4a43-8947-0fbb2990a658",
+    "extendedMetaclass" : "b6806bbd-3c18-403c-abcf-b7b78d92527e"
+  }, {
+    "extendingStereotype" : "ea9ad9c9-35f9-4692-aef7-c50f714227b2",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "f9e4516c-3498-4bfe-89ee-dd41d91955c1",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "c139abac-706b-47f6-abeb-c948130b5d94",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "6ec9cc7d-d94e-4224-90b0-462750c595a5",
+    "extendedMetaclass" : "22410663-7c97-49ba-9a48-3bdbef943078"
+  }, {
+    "extendingStereotype" : "34879243-f47b-49be-bd58-d6b1b2c69a43",
+    "extendedMetaclass" : "b6806bbd-3c18-403c-abcf-b7b78d92527e"
+  }, {
+    "extendingStereotype" : "2c7738a2-9d17-4dea-8af2-e5b05450d639",
+    "extendedMetaclass" : "22410663-7c97-49ba-9a48-3bdbef943078"
+  }, {
+    "extendingStereotype" : "2c7738a2-9d17-4dea-8af2-e5b05450d639",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "8c7ac346-009c-46b0-8595-814aab985589",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "c765d924-63cb-4516-9be8-91a3bd7ee042",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  }, {
+    "extendingStereotype" : "5eadf31d-811d-42fc-be20-d118f4e39955",
+    "extendedMetaclass" : "b6806bbd-3c18-403c-abcf-b7b78d92527e"
+  }, {
+    "extendingStereotype" : "812fc349-d8e9-467d-8ff9-fa83e7b3dfc7",
+    "extendedMetaclass" : "4b5dccd9-be10-49c6-9fe0-6bf1a869cfe2"
+  } ],
+  "stereotype2attribute" : [ ],
+  "stereotype2associationEndMetaClassProperty" : [ ],
+  "stereotype2associationEndStereotypeProperty" : [ ],
+  "importedProfiles" : [ ],
+  "type" : "OTIMOFProfileResourceExtent"
+}

@@ -54,18 +54,17 @@ import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataR
 import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.utils.OTIHelper
 import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.validation.OTIMagicDrawValidation
 import org.omg.oti.json.common.OTIPrimitiveTypes._
-import org.omg.oti.json.common._
 import org.omg.oti.json.uml.serialization.OTIJsonSerializationHelper
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper._
 import org.omg.oti.magicdraw.uml.read.MagicDrawUML
 import org.omg.oti.mof.schema._
-import org.omg.oti.uml.read.api.{UMLAssociation, UMLClass, UMLElement, UMLPackage}
+import org.omg.oti.uml.read.api._
 import org.omg.oti.uml.xmi.Document
 
 import scala.collection.immutable._
-import scala.io.{Codec,Source}
+import scala.io.{Codec, Source}
 import scala.{Boolean, Int, Long, None, Option, Some, StringContext, Unit}
-import scala.Predef.{augmentString, require, refArrayOps, ArrowAssoc}
+import scala.Predef.{augmentString, refArrayOps, require, ArrowAssoc, String}
 import scala.util.{Failure, Success, Try}
 import scalaz._
 
@@ -110,7 +109,7 @@ object ExportAsOTIMOFMetamodels {
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
     resourceExtents: Set[OTIMOFResourceExtent])
-  : Try[Document[MagicDrawUML] => \/[Set[java.lang.Throwable], OTIMOFResourceExtent]]
+  : Try[Document[MagicDrawUML] => \&/[Vector[java.lang.Throwable], OTIMOFResourceExtent]]
   = resourceExtents.find(Utils.PrimitiveTypes_IRI == _.resource.iri) match {
     case Some(r: OTIMOFLibraryResourceExtent) =>
       Success(exportAsOTIMOFMetamodel(p, odsa, r) _)
@@ -123,36 +122,55 @@ object ExportAsOTIMOFMetamodels {
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
     primitiveTypes: OTIMOFLibraryResourceExtent)
   ( d: Document[MagicDrawUML] )
-  : \/[Set[java.lang.Throwable], OTIMOFResourceExtent]
+  : Vector[java.lang.Throwable] \&/ OTIMOFResourceExtent
   = {
     implicit val ops = odsa.otiAdapter.umlOps
-    import ops._
+    import Utils.selectable
 
     val mcs
     : Vector[UMLClass[MagicDrawUML]]
     = d
       .scope
-      .ownedType
-      .selectByKindOf { case mc: UMLClass[MagicDrawUML] => mc }
+      .allOwnedElements
+      .select { case mc: UMLClass[MagicDrawUML] => mc }
       .to[Vector]
-      .sortBy(_.toolSpecific_uuid.get)
+      .sortBy(_.name.get)
 
     val mas
     : Vector[UMLAssociation[MagicDrawUML]]
     = d
       .scope
-      .ownedType
-      .selectByKindOf { case mc: UMLAssociation[MagicDrawUML] => mc }
+      .allOwnedElements
+      .select { case mc: UMLAssociation[MagicDrawUML] => mc }
       .to[Vector]
-      .sortBy(_.toolSpecific_uuid.get)
+      .sortBy(_.name.get)
 
     val app = Application.getInstance()
     val guiLog = app.getGUILog
 
-    val mm = OTIMOFMetamodel(Identification.MetamodelIRI(OTI_URI.unwrap(d.info.packageURI)))
+    val dataTypedAttributes
+    : Vector[(String @@ Identification.MetaClassUUID, UMLProperty[MagicDrawUML], Int)]
+    = mcs
+      .flatMap { mc =>
+        val mcUUID = Identification.MetaClassUUID(TOOL_SPECIFIC_UUID.unwrap(mc.toolSpecific_uuid.get))
+        mc
+          .ownedAttribute
+          .zipWithIndex
+          .filter(_._1._type match {
+            case Some(_: UMLPrimitiveType[MagicDrawUML]) =>
+              true
+            case Some(_: UMLEnumeration[MagicDrawUML]) =>
+              true
+            case _ =>
+              false
+          })
+          .map { case (p, i) =>
+            (mcUUID, p, i)
+          }
+      }
 
     val extent = OTIMOFMetamodelResourceExtent(
-      resource = mm,
+      resource = OTIMOFMetamodel(Identification.MetamodelIRI(OTI_URI.unwrap(d.info.packageURI))),
       classifiers =
         mcs.map { mc =>
           metamodel.MetaClass(
@@ -200,11 +218,34 @@ object ExportAsOTIMOFMetamodels {
           association = Identification.MetaAssociationUUID(TOOL_SPECIFIC_UUID.unwrap(ma.toolSpecific_uuid.get)),
           targetEnd = Identification.AssociationTargetEndUUID(TOOL_SPECIFIC_UUID.unwrap(target.toolSpecific_uuid.get))
         )
+      },
+      attributes = dataTypedAttributes.map { case (mcUUID, p, _) =>
+        features.DatatypedAttributeProperty(
+          uuid = Identification.DatatypedAttributePropertyUUID(TOOL_SPECIFIC_UUID.unwrap(p.toolSpecific_uuid.get)),
+          name = Common.Name(p.name.get))
+      },
+      metaclass2attribute = dataTypedAttributes.map { case (mcUUID, p, i) =>
+          metamodel.MetaClass2Attribute(
+            metaClass = mcUUID,
+            attribute = Identification.DatatypedAttributePropertyUUID(TOOL_SPECIFIC_UUID.unwrap(p.toolSpecific_uuid.get)),
+            index = i)
+      },
+      // @todo add association generalizations
+      generalizations = mcs.flatMap { mc =>
+        val specific = Identification.MetamodelClassifierUUID(TOOL_SPECIFIC_UUID.unwrap(mc.toolSpecific_uuid.get))
+        mc.parents.flatMap {
+          case pc: UMLClass[MagicDrawUML] if mcs.contains(pc) =>
+            Some(metamodel.MetaClassifierGeneralization(
+              specific,
+              general=Identification.MetamodelClassifierUUID(TOOL_SPECIFIC_UUID.unwrap(pc.toolSpecific_uuid.get))))
+          case _ =>
+            None
+        }
       }
     )
 
     guiLog.log(s"Extent: ${d.info.packageURI}")
 
-    \/-(extent)
+    \&/.That(extent)
   }
 }
