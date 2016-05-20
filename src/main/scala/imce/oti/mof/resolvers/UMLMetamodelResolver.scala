@@ -66,7 +66,7 @@ case class UMLMetamodelResolver
  : Map[String, String @@ Identification.MetaClassUUID],
 
  mc2AllAttributes
- : Map[String, Set[features.DatatypedAttributeProperty]])
+ : Map[String, Set[features.DataTypedAttributeUnorderedProperty]])
 
 object UMLMetamodelResolver {
 
@@ -117,7 +117,7 @@ object UMLMetamodelResolver {
     }.toMap
 
     val mc2DirectAttributes
-    : Map[metamodel.MetaClass, Set[features.DatatypedAttributeProperty]]
+    : Map[metamodel.MetaClass, Set[features.DataTypedAttributeUnorderedProperty]]
     = umlR
       .metaclass2attribute
       .flatMap { mc2attrib =>
@@ -126,7 +126,7 @@ object UMLMetamodelResolver {
           metaclasses.find(_.uuid == mc2attrib.metaClass)
 
           attrib <-
-          umlR.attributes.select { case a: features.DatatypedAttributeProperty => a }.find(_.uuid == mc2attrib.attribute)
+          umlR.attributes.select { case a: features.DataTypedAttributeUnorderedProperty => a }.find(_.uuid == mc2attrib.attribute)
         } yield mc -> attrib
       }
       .groupBy(_._1)
@@ -134,19 +134,19 @@ object UMLMetamodelResolver {
 
 
     val mc2AllAttributes
-    : Map[metamodel.MetaClass, Set[features.DatatypedAttributeProperty]]
+    : Map[metamodel.MetaClass, Set[features.DataTypedAttributeUnorderedProperty]]
     = metaclasses
       .to[Set]
-      .foldLeft(Map.empty[metamodel.MetaClass, Set[features.DatatypedAttributeProperty]]) {
-        case (acc: Map[metamodel.MetaClass, Set[features.DatatypedAttributeProperty]], mc: metamodel.MetaClass) =>
+      .foldLeft(Map.empty[metamodel.MetaClass, Set[features.DataTypedAttributeUnorderedProperty]]) {
+        case (acc: Map[metamodel.MetaClass, Set[features.DataTypedAttributeUnorderedProperty]], mc: metamodel.MetaClass) =>
 
-          val mcAttribs = mc2DirectAttributes.getOrElse(mc, Set.empty[features.DatatypedAttributeProperty])
+          val mcAttribs = mc2DirectAttributes.getOrElse(mc, Set.empty[features.DataTypedAttributeUnorderedProperty])
 
           def combine
-          (current: Map[metamodel.MetaClass, Set[features.DatatypedAttributeProperty]],
+          (current: Map[metamodel.MetaClass, Set[features.DataTypedAttributeUnorderedProperty]],
            s: metamodel.MetaClass)
-          : Map[metamodel.MetaClass, Set[features.DatatypedAttributeProperty]]
-          = current.updated(s, mcAttribs ++ current.getOrElse(s, Set.empty[features.DatatypedAttributeProperty]))
+          : Map[metamodel.MetaClass, Set[features.DataTypedAttributeUnorderedProperty]]
+          = current.updated(s, mcAttribs ++ current.getOrElse(s, Set.empty[features.DataTypedAttributeUnorderedProperty]))
 
           transitiveClosure(mc, acc)(getSpecializedMetaclasses, combine)
       }

@@ -371,7 +371,7 @@ object ExportAsOTIMOFModels {
   = {
     val mdE = e.getMagicDrawElement
     val mdMC = mdE.eClass
-    val attribs = umlResolver.mc2AllAttributes.getOrElse(mdMC.getName, Set.empty[features.DatatypedAttributeProperty])
+    val attribs = umlResolver.mc2AllAttributes.getOrElse(mdMC.getName, Set.empty[features.DataTypedAttributeUnorderedProperty])
 
     mdMC.getEAllAttributes.aggregate[Vector[java.lang.Throwable] \&/ Vector[model.ModelElementAttributeValue]](
       \&/.That(Vector())
@@ -404,8 +404,8 @@ object ExportAsOTIMOFModels {
                           model.ModelElementOrderedAttributeValue(
                             modelElement = Identification.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
                             attributeValue = values.AtomicValue(
-                              atomicAttribute = attrib.uuid,
-                              lexicalValue = v.toString),
+                              attribute = attrib.uuid,
+                              value = Identification.AtomicValueRepresentation(v.toString)),
                             index = i)
                         }
                         .toVector
@@ -414,8 +414,8 @@ object ExportAsOTIMOFModels {
                         model.ModelElementOrderedAttributeValue(
                           modelElement = Identification.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
                           attributeValue = values.AtomicValue(
-                            atomicAttribute = attrib.uuid,
-                            lexicalValue = v.toString),
+                            attribute = attrib.uuid,
+                            value = Identification.AtomicValueRepresentation(v.toString)),
                           index = 0))
                   }
                   acc append \&/.That(attributeValues)
@@ -427,8 +427,8 @@ object ExportAsOTIMOFModels {
                           model.ModelElementUnorderedAttributeValue(
                             modelElement = Identification.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
                             attributeValue = values.AtomicValue(
-                              atomicAttribute = attrib.uuid,
-                              lexicalValue = v.toString))
+                              attribute = attrib.uuid,
+                              value = Identification.AtomicValueRepresentation(v.toString)))
                         }
                         .toVector
                     case v =>
@@ -437,8 +437,8 @@ object ExportAsOTIMOFModels {
                           model.ModelElementUnorderedAttributeValue(
                             modelElement = Identification.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
                             attributeValue = values.AtomicValue(
-                              atomicAttribute = attrib.uuid,
-                              lexicalValue = v.toString)))
+                              attribute = attrib.uuid,
+                              value = Identification.AtomicValueRepresentation(v.toString))))
                       else
                         Vector()
                   }

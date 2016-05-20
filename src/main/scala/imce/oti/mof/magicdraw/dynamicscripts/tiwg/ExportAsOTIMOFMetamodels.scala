@@ -188,15 +188,15 @@ object ExportAsOTIMOFMetamodels {
         val (source, target) = ends.get
 
         Vector(
-          features.AssociationSourceEndProperty(
+          features.AssociationSourceEnd(
             uuid = Identification.AssociationSourceEndUUID(TOOL_SPECIFIC_UUID.unwrap(source.toolSpecific_uuid.get)),
             name = Common.Name(source.name.get)),
           if (target.isComposite)
-            features.AssociationTargetEndCompositeProperty(
+            features.AssociationTargetCompositeEnd(
               uuid = Identification.AssociationTargetEndUUID(TOOL_SPECIFIC_UUID.unwrap(target.toolSpecific_uuid.get)),
               name = Common.Name(target.name.get))
           else
-            features.AssociationTargetEndReferenceProperty(
+            features.AssociationTargetReferenceEnd(
               uuid = Identification.AssociationTargetEndUUID(TOOL_SPECIFIC_UUID.unwrap(target.toolSpecific_uuid.get)),
               name = Common.Name(target.name.get))
         )
@@ -220,7 +220,7 @@ object ExportAsOTIMOFMetamodels {
         )
       },
       attributes = dataTypedAttributes.map { case (mcUUID, p, _) =>
-        features.DatatypedAttributeProperty(
+        features.DataTypedAttributeUnorderedProperty(
           uuid = Identification.DatatypedAttributePropertyUUID(TOOL_SPECIFIC_UUID.unwrap(p.toolSpecific_uuid.get)),
           name = Common.Name(p.name.get))
       },
