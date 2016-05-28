@@ -148,16 +148,6 @@ lazy val core = Project("imce-oti-mof-magicdraw-dynamicscripts", file("."))
     unmanagedClasspath in Compile <++= unmanagedJars in Compile
   )
   .dependsOnSourceProjectOrLibraryArtifacts(
-    "oti-uml-magicdraw-adapter",
-    "org.omg.oti.uml.magicdraw.adapter",
-    Seq(
-      "org.omg.tiwg" %% "oti-uml-magicdraw-adapter"
-        % Versions_oti_uml_magicdraw_adapter.version % "compile"
-        withSources() withJavadoc() artifacts
-        Artifact("oti-uml-magicdraw-adapter", "zip", "zip", Some("resource"), Seq(), None, Map())
-    )
-  )
-  .dependsOnSourceProjectOrLibraryArtifacts(
     "imce-oti-uml-magicdraw-dynamicscripts",
     "imce.oti.uml.magicdraw.dynamicscripts",
     Seq(
@@ -168,13 +158,13 @@ lazy val core = Project("imce-oti-mof-magicdraw-dynamicscripts", file("."))
     )
   )
   .dependsOnSourceProjectOrLibraryArtifacts(
-    "org-omg-oti-mof-spark",
-    "org.omg.oti.mof.spark",
+    "org-omg-oti-mof-schema",
+    "org.omg.oti.mof.schema",
     Seq(
-      "org.omg.tiwg" %% "org-omg-oti-mof-spark"
-        % Versions_oti_mof_spark.version % "compile"
+      "org.omg.tiwg" %% "org-omg-oti-mof-schema"
+        % Versions_oti_mof_schema.version % "compile"
         withSources() withJavadoc() artifacts
-        Artifact("org-omg-oti-mof-spark", "zip", "zip", Some("resource"), Seq(), None, Map())
+        Artifact("org-omg-oti-mof-schema", "zip", "zip", Some("resource"), Seq(), None, Map())
     )
   )
   .settings(

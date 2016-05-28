@@ -44,7 +44,6 @@ import imce.oti.mof.magicdraw.dynamicscripts.tiwg.Utils._
 import scala.collection.immutable._
 import scala.{Some,Tuple2,Tuple3}
 import scala.Predef.{ArrowAssoc, String}
-import scalaz._
 
 case class UMLMetamodelResolver
 (primitiveTypesR
@@ -63,7 +62,7 @@ case class UMLMetamodelResolver
  : Map[metamodel.MetaClass, Set[metamodel.MetaClass]],
 
  mcName2UUID
- : Map[String, String @@ Identification.MetaClassUUID],
+ : Map[String, common.MetaClassUUID],
 
  mc2AllAttributes
  : Map[String, Set[features.DataTypedAttributeUnorderedProperty]])
@@ -111,9 +110,9 @@ object UMLMetamodelResolver {
       .getOrElse(mc, Set.empty[metamodel.MetaClass])
 
     val mcName2UUID
-    : Map[String, String @@ Identification.MetaClassUUID]
+    : Map[String, common.MetaClassUUID]
     = metaclasses.map { mc =>
-      Common.Name.unwrap(mc.name) -> mc.uuid
+      mc.name.value -> mc.uuid
     }.toMap
 
     val mc2DirectAttributes
@@ -156,7 +155,7 @@ object UMLMetamodelResolver {
       mc2DirectGeneralizations,
       mc2DirectSpecializations,
       mcName2UUID,
-      mc2AllAttributes.map { case (s, as) => Common.Name.unwrap(s.name) -> as })
+      mc2AllAttributes.map { case (s, as) => s.name.value -> as })
   }
 
   def transitiveClosure[E, V]

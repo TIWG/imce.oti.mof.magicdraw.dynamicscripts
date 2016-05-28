@@ -53,6 +53,7 @@ import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataR
 import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.utils.OTIHelper
 import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.validation.OTIMagicDrawValidation
 import org.omg.oti.json.common.OTIPrimitiveTypes._
+import org.omg.oti.json.common.OTIDocumentSetConfiguration
 import org.omg.oti.json.uml.serialization.OTIJsonSerializationHelper
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper.{MagicDrawOTIDocumentSetAdapterForDataProvider, MagicDrawOTIHelper}
 import org.omg.oti.magicdraw.uml.read.{MagicDrawUML, MagicDrawUMLUtil}
@@ -85,7 +86,7 @@ object ExportAsOTIMOFLibraries {
   = Utils.browserDynamicScript(
     p, ev, script, tree, node, top, selection,
     "exportAsOTIMOFLibrary",
-    exportAsOTIMOFLibrary,
+    exportAsOTIMOFLibraryCallback,
     Utils.chooseOTIDocumentSetConfigurationNoResources)
 
   def doit
@@ -100,8 +101,23 @@ object ExportAsOTIMOFLibraries {
   = Utils.diagramDynamicScript(
     p, ev, script, dpe, triggerView, triggerElement, selection,
     "exportAsOTIMOFLibrary",
-    exportAsOTIMOFLibrary,
+    exportAsOTIMOFLibraryCallback,
     Utils.chooseOTIDocumentSetConfigurationNoResources)
+
+  def exportAsOTIMOFLibraryCallback
+  ( p: Project,
+    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
+    resourceExtents: Set[OTIMOFResourceExtent],
+    config: OTIDocumentSetConfiguration,
+    selectedSpecificationRootPackages: Set[UMLPackage[MagicDrawUML]] )
+  : Try[Option[MagicDrawValidationDataResults]]
+  = for {
+    cb <- exportAsOTIMOFLibrary(p, odsa, resourceExtents)
+    er <- Utils.exportAsOTIMOFResource(
+      p, odsa, config,
+      selectedSpecificationRootPackages,
+      resourceExtents, cb, "exportAsOTIMOFLibrary")
+  } yield er
 
   def exportAsOTIMOFLibrary
   ( p: Project,
@@ -127,7 +143,7 @@ object ExportAsOTIMOFLibraries {
       val app = Application.getInstance()
       val guiLog = app.getGUILog
 
-      val lib = OTIMOFLibrary(Identification.LibraryIRI(OTI_URI.unwrap(d.info.packageURI)))
+      val lib = OTIMOFLibrary(common.LibraryIRI(OTI_URI.unwrap(d.info.packageURI)))
 
       val extent = OTIMOFLibraryResourceExtent(
         resource=lib,
@@ -141,13 +157,13 @@ object ExportAsOTIMOFLibraries {
   }
 
   val primitiveTypeMap
-  : Map[String, String @@ Common.DatatypeAbbrevIRI]
+  : Map[String, common.DatatypeAbbrevIRI]
   = Map(
-    "Boolean" -> Common.DatatypeAbbrevIRI("xsd:boolean"),
-    "Integer" -> Common.DatatypeAbbrevIRI("xsd:integer"),
-    "Real" -> Common.DatatypeAbbrevIRI("xsd:double"),
-    "String" -> Common.DatatypeAbbrevIRI("xsd:string"),
-    "UnlimitedNatural" -> Common.DatatypeAbbrevIRI("xsd:string")
+    "Boolean" -> common.DatatypeAbbrevIRI("xsd:boolean"),
+    "Integer" -> common.DatatypeAbbrevIRI("xsd:integer"),
+    "Real" -> common.DatatypeAbbrevIRI("xsd:double"),
+    "String" -> common.DatatypeAbbrevIRI("xsd:string"),
+    "UnlimitedNatural" -> common.DatatypeAbbrevIRI("xsd:string")
     )
 
   def toDatatypeClassifier
@@ -157,8 +173,8 @@ object ExportAsOTIMOFLibraries {
   = e match {
     case pt: UMLPrimitiveType[MagicDrawUML] =>
       library.PrimitiveDataType(
-        uuid = Identification.LibraryPrimitiveTypeUUID(TOOL_SPECIFIC_UUID.unwrap(pt.toolSpecific_uuid.get)),
-        name = Common.Name(pt.name.get),
+        uuid = common.LibraryPrimitiveTypeUUID(TOOL_SPECIFIC_UUID.unwrap(pt.toolSpecific_uuid.get)),
+        name = common.Name(pt.name.get),
         datatypeMapDefinition = primitiveTypeMap(pt.name.get)
       ).some
     case _ =>

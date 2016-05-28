@@ -53,7 +53,11 @@ import gov.nasa.jpl.dynamicScripts.magicdraw.utils.MDUML
 import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataResults
 import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.utils.OTIHelper
 import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.validation.OTIMagicDrawValidation
+
+import imce.oti.mof.resolvers.OTIHelpers._
+
 import org.omg.oti.json.common.OTIPrimitiveTypes._
+import org.omg.oti.json.common.OTIDocumentSetConfiguration
 import org.omg.oti.json.uml.serialization.OTIJsonSerializationHelper
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper._
 import org.omg.oti.magicdraw.uml.read.MagicDrawUML
@@ -64,7 +68,7 @@ import org.omg.oti.uml.xmi.Document
 import scala.collection.immutable._
 import scala.io.{Codec, Source}
 import scala.{Boolean, Int, Long, None, Option, Some, StringContext, Unit}
-import scala.Predef.{augmentString, refArrayOps, require, ArrowAssoc, String}
+import scala.Predef.{augmentString, refArrayOps, require, ArrowAssoc}
 import scala.util.{Failure, Success, Try}
 import scalaz._
 
@@ -87,7 +91,7 @@ object ExportAsOTIMOFMetamodels {
   = Utils.browserDynamicScript(
     p, ev, script, tree, node, top, selection,
     "exportAsOTIMOFMetamodel",
-    exportAsOTIMOFMetamodel,
+    exportAsOTIMOFMetamodelCallback,
     Utils.chooseOTIDocumentSetConfigurationAndPrimitiveTypes)
 
   def doit
@@ -102,8 +106,23 @@ object ExportAsOTIMOFMetamodels {
   = Utils.diagramDynamicScript(
     p, ev, script, dpe, triggerView, triggerElement, selection,
     "exportAsOTIMOFMetamodel",
-    exportAsOTIMOFMetamodel,
+    exportAsOTIMOFMetamodelCallback,
     Utils.chooseOTIDocumentSetConfigurationAndPrimitiveTypes)
+
+  def exportAsOTIMOFMetamodelCallback
+  ( p: Project,
+    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
+    resourceExtents: Set[OTIMOFResourceExtent],
+    config: OTIDocumentSetConfiguration,
+    selectedSpecificationRootPackages: Set[UMLPackage[MagicDrawUML]] )
+  : Try[Option[MagicDrawValidationDataResults]]
+  = for {
+    cb <- exportAsOTIMOFMetamodel(p, odsa, resourceExtents)
+    er <- Utils.exportAsOTIMOFResource(
+      p, odsa, config,
+      selectedSpecificationRootPackages,
+      resourceExtents, cb, "exportAsOTIMOFLibrary")
+  } yield er
 
   def exportAsOTIMOFMetamodel
   ( p: Project,
@@ -149,10 +168,10 @@ object ExportAsOTIMOFMetamodels {
     val guiLog = app.getGUILog
 
     val dataTypedAttributes
-    : Vector[(String @@ Identification.MetaClassUUID, UMLProperty[MagicDrawUML], Int)]
+    : Vector[(common.MetaClassUUID, UMLProperty[MagicDrawUML], Int)]
     = mcs
       .flatMap { mc =>
-        val mcUUID = Identification.MetaClassUUID(TOOL_SPECIFIC_UUID.unwrap(mc.toolSpecific_uuid.get))
+        val mcUUID = common.MetaClassUUID(TOOL_SPECIFIC_UUID.unwrap(mc.toolSpecific_uuid.get))
         mc
           .ownedAttribute
           .zipWithIndex
@@ -170,17 +189,17 @@ object ExportAsOTIMOFMetamodels {
       }
 
     val extent = OTIMOFMetamodelResourceExtent(
-      resource = OTIMOFMetamodel(Identification.MetamodelIRI(OTI_URI.unwrap(d.info.packageURI))),
+      resource = OTIMOFMetamodel(common.MetamodelIRI(OTI_URI.unwrap(d.info.packageURI))),
       classifiers =
         mcs.map { mc =>
           metamodel.MetaClass(
-            uuid = Identification.MetaClassUUID(TOOL_SPECIFIC_UUID.unwrap(mc.toolSpecific_uuid.get)),
-            name = Common.Name(mc.name.get))
+            uuid = common.MetaClassUUID(TOOL_SPECIFIC_UUID.unwrap(mc.toolSpecific_uuid.get)),
+            name = common.Name(mc.name.get))
         } ++
           mas.map { ma =>
             metamodel.MetaAssociation(
-              uuid = Identification.MetaAssociationUUID(TOOL_SPECIFIC_UUID.unwrap(ma.toolSpecific_uuid.get)),
-              name = Common.Name(ma.name.get))
+              uuid = common.MetaAssociationUUID(TOOL_SPECIFIC_UUID.unwrap(ma.toolSpecific_uuid.get)),
+              name = common.Name(ma.name.get))
           },
       associationEnds = mas.flatMap { ma =>
         val ends = ma.getDirectedAssociationEnd
@@ -189,16 +208,16 @@ object ExportAsOTIMOFMetamodels {
 
         Vector(
           features.AssociationSourceEnd(
-            uuid = Identification.AssociationSourceEndUUID(TOOL_SPECIFIC_UUID.unwrap(source.toolSpecific_uuid.get)),
-            name = Common.Name(source.name.get)),
+            uuid = common.AssociationSourceEndUUID(TOOL_SPECIFIC_UUID.unwrap(source.toolSpecific_uuid.get)),
+            name = common.Name(source.name.get)),
           if (target.isComposite)
             features.AssociationTargetCompositeEnd(
-              uuid = Identification.AssociationTargetEndUUID(TOOL_SPECIFIC_UUID.unwrap(target.toolSpecific_uuid.get)),
-              name = Common.Name(target.name.get))
+              uuid = common.AssociationTargetEndUUID(TOOL_SPECIFIC_UUID.unwrap(target.toolSpecific_uuid.get)),
+              name = common.Name(target.name.get))
           else
             features.AssociationTargetReferenceEnd(
-              uuid = Identification.AssociationTargetEndUUID(TOOL_SPECIFIC_UUID.unwrap(target.toolSpecific_uuid.get)),
-              name = Common.Name(target.name.get))
+              uuid = common.AssociationTargetEndUUID(TOOL_SPECIFIC_UUID.unwrap(target.toolSpecific_uuid.get)),
+              name = common.Name(target.name.get))
         )
       },
       association2source = mas.map { ma =>
@@ -206,8 +225,8 @@ object ExportAsOTIMOFMetamodels {
         require(ends.isDefined, ma.qualifiedName.get)
         val (source, _) = ends.get
         metamodel.MetaAssociation2SourceEndProperty(
-          association = Identification.MetaAssociationUUID(TOOL_SPECIFIC_UUID.unwrap(ma.toolSpecific_uuid.get)),
-          sourceEnd = Identification.AssociationSourceEndUUID(TOOL_SPECIFIC_UUID.unwrap(source.toolSpecific_uuid.get))
+          association = common.MetaAssociationUUID(TOOL_SPECIFIC_UUID.unwrap(ma.toolSpecific_uuid.get)),
+          sourceEnd = common.AssociationSourceEndUUID(TOOL_SPECIFIC_UUID.unwrap(source.toolSpecific_uuid.get))
         )
       },
       association2Target = mas.map { ma =>
@@ -215,29 +234,103 @@ object ExportAsOTIMOFMetamodels {
         require(ends.isDefined, ma.qualifiedName.get)
         val (_, target) = ends.get
         metamodel.MetaAssociation2TargetEndProperty(
-          association = Identification.MetaAssociationUUID(TOOL_SPECIFIC_UUID.unwrap(ma.toolSpecific_uuid.get)),
-          targetEnd = Identification.AssociationTargetEndUUID(TOOL_SPECIFIC_UUID.unwrap(target.toolSpecific_uuid.get))
+          association = common.MetaAssociationUUID(TOOL_SPECIFIC_UUID.unwrap(ma.toolSpecific_uuid.get)),
+          targetEnd = common.AssociationTargetEndUUID(TOOL_SPECIFIC_UUID.unwrap(target.toolSpecific_uuid.get))
         )
       },
       attributes = dataTypedAttributes.map { case (mcUUID, p, _) =>
         features.DataTypedAttributeUnorderedProperty(
-          uuid = Identification.DatatypedAttributePropertyUUID(TOOL_SPECIFIC_UUID.unwrap(p.toolSpecific_uuid.get)),
-          name = Common.Name(p.name.get))
+          uuid = common.DatatypedAttributePropertyUUID(TOOL_SPECIFIC_UUID.unwrap(p.toolSpecific_uuid.get)),
+          name = common.Name(p.name.get))
+      },
+      attribute2type = dataTypedAttributes.map { case (_, p, _) =>
+          features.AttributeProperty2DataType(
+            attribute = common.DatatypedAttributePropertyUUID(TOOL_SPECIFIC_UUID.unwrap(p.toolSpecific_uuid.get)),
+            `type` = p.getSchemaDatatypeUUID()
+          )
       },
       metaclass2attribute = dataTypedAttributes.map { case (mcUUID, p, i) =>
           metamodel.MetaClass2Attribute(
             metaClass = mcUUID,
-            attribute = Identification.DatatypedAttributePropertyUUID(TOOL_SPECIFIC_UUID.unwrap(p.toolSpecific_uuid.get)),
+            attribute = common.DatatypedAttributePropertyUUID(TOOL_SPECIFIC_UUID.unwrap(p.toolSpecific_uuid.get)),
             index = i)
       },
-      // @todo add association generalizations
+      featureLowerBounds = mas.map { ma =>
+        val ends = ma.getDirectedAssociationEnd
+        require(ends.isDefined, ma.qualifiedName.get)
+        val (source, _) = ends.get
+        features.FeatureLowerBound(
+          feature = common.AssociationSourceEndUUID(TOOL_SPECIFIC_UUID.unwrap(source.toolSpecific_uuid.get)),
+          lower = common.NonNegativeInt(source.lower.intValue())
+        )
+      } ++ mas.map { ma =>
+        val ends = ma.getDirectedAssociationEnd
+        require(ends.isDefined, ma.qualifiedName.get)
+        val (_, target) = ends.get
+        features.FeatureLowerBound(
+          feature = common.AssociationTargetEndUUID(TOOL_SPECIFIC_UUID.unwrap(target.toolSpecific_uuid.get)),
+          lower = common.NonNegativeInt(target.lower.intValue())
+        )
+      } ++ dataTypedAttributes.map { case (_, p, _) =>
+        features.FeatureLowerBound(
+          feature = common.DatatypedAttributePropertyUUID(TOOL_SPECIFIC_UUID.unwrap(p.toolSpecific_uuid.get)),
+          lower = common.NonNegativeInt(p.lower.intValue()))
+      },
+      featureUpperBounds = mas.map { ma =>
+        val ends = ma.getDirectedAssociationEnd
+        require(ends.isDefined, ma.qualifiedName.get)
+        val (source, _) = ends.get
+        features.FeatureUpperBound(
+          feature = common.AssociationSourceEndUUID(TOOL_SPECIFIC_UUID.unwrap(source.toolSpecific_uuid.get)),
+          upper = common.UnlimitedNatural(source.upper.intValue()))
+      } ++ mas.map { ma =>
+        val ends = ma.getDirectedAssociationEnd
+        require(ends.isDefined, ma.qualifiedName.get)
+        val (_, target) = ends.get
+        features.FeatureUpperBound(
+          feature = common.AssociationTargetEndUUID(TOOL_SPECIFIC_UUID.unwrap(target.toolSpecific_uuid.get)),
+          upper = common.UnlimitedNatural(target.upper.intValue()))
+      } ++ dataTypedAttributes.map { case (_, p, _) =>
+        features.FeatureUpperBound(
+          feature = common.DatatypedAttributePropertyUUID(TOOL_SPECIFIC_UUID.unwrap(p.toolSpecific_uuid.get)),
+          upper = common.UnlimitedNatural(p.upper.intValue()))
+      },
+      featureOrdering = mas.map { ma =>
+        val ends = ma.getDirectedAssociationEnd
+        require(ends.isDefined, ma.qualifiedName.get)
+        val (source, _) = ends.get
+        features.FeatureOrdering(
+          feature = common.AssociationSourceEndUUID(TOOL_SPECIFIC_UUID.unwrap(source.toolSpecific_uuid.get)),
+          isOrdered = source.isOrdered)
+      } ++ mas.map { ma =>
+        val ends = ma.getDirectedAssociationEnd
+        require(ends.isDefined, ma.qualifiedName.get)
+        val (_, target) = ends.get
+        features.FeatureOrdering(
+          feature = common.AssociationTargetEndUUID(TOOL_SPECIFIC_UUID.unwrap(target.toolSpecific_uuid.get)),
+          isOrdered = target.isOrdered)
+      } ++ dataTypedAttributes.map { case (_, p, _) =>
+        features.FeatureOrdering(
+          feature = common.DatatypedAttributePropertyUUID(TOOL_SPECIFIC_UUID.unwrap(p.toolSpecific_uuid.get)),
+          isOrdered = p.isOrdered)
+      },
       generalizations = mcs.flatMap { mc =>
-        val specific = Identification.MetamodelClassifierUUID(TOOL_SPECIFIC_UUID.unwrap(mc.toolSpecific_uuid.get))
+        val specific = common.MetaClassUUID(TOOL_SPECIFIC_UUID.unwrap(mc.toolSpecific_uuid.get))
         mc.parents.flatMap {
           case pc: UMLClass[MagicDrawUML] if mcs.contains(pc) =>
             Some(metamodel.MetaClassifierGeneralization(
               specific,
-              general=Identification.MetamodelClassifierUUID(TOOL_SPECIFIC_UUID.unwrap(pc.toolSpecific_uuid.get))))
+              general=common.MetaClassUUID(TOOL_SPECIFIC_UUID.unwrap(pc.toolSpecific_uuid.get))))
+          case _ =>
+            None
+        }
+      } ++ mas.flatMap { ma =>
+        val specific = common.MetaAssociationUUID(TOOL_SPECIFIC_UUID.unwrap(ma.toolSpecific_uuid.get))
+        ma.parents.flatMap {
+          case pa: UMLAssociation[MagicDrawUML] =>
+            Some(metamodel.MetaClassifierGeneralization(
+              specific,
+              general=common.MetaAssociationUUID(TOOL_SPECIFIC_UUID.unwrap(pa.toolSpecific_uuid.get))))
           case _ =>
             None
         }

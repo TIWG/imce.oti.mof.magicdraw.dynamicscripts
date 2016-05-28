@@ -1,34 +1,56 @@
 {
   "resource" : {
-    "iri" : "http://www.omg.org/spec/PrimitiveTypes/20131001"
+    "iri" : {
+      "value" : "http://www.omg.org/spec/PrimitiveTypes/20131001"
+    }
   },
   "classifiers" : [ {
-    "uuid" : "b462dd99-1c03-4bcb-bc92-887a69aa8ca3",
+    "uuid" : {
+      "value" : "b462dd99-1c03-4bcb-bc92-887a69aa8ca3"
+    },
     "name" : "Boolean",
-    "datatypeMapDefinition" : "xsd:boolean",
+    "datatypeMapDefinition" : {
+      "value" : "xsd:boolean"
+    },
     "type" : "PrimitiveDataType"
   }, {
-    "uuid" : "47294366-bf75-4ca3-bf28-47057e157596",
+    "uuid" : {
+      "value" : "47294366-bf75-4ca3-bf28-47057e157596"
+    },
     "name" : "Integer",
-    "datatypeMapDefinition" : "xsd:integer",
+    "datatypeMapDefinition" : {
+      "value" : "xsd:integer"
+    },
     "type" : "PrimitiveDataType"
   }, {
-    "uuid" : "bffc7fce-3760-4c5a-a538-1783a58c3af3",
+    "uuid" : {
+      "value" : "bffc7fce-3760-4c5a-a538-1783a58c3af3"
+    },
     "name" : "Real",
-    "datatypeMapDefinition" : "xsd:double",
+    "datatypeMapDefinition" : {
+      "value" : "xsd:double"
+    },
     "type" : "PrimitiveDataType"
   }, {
-    "uuid" : "b2ba8c2c-d236-4d7b-b7f3-212782702ea1",
+    "uuid" : {
+      "value" : "b2ba8c2c-d236-4d7b-b7f3-212782702ea1"
+    },
     "name" : "String",
-    "datatypeMapDefinition" : "xsd:string",
+    "datatypeMapDefinition" : {
+      "value" : "xsd:string"
+    },
     "type" : "PrimitiveDataType"
   }, {
-    "uuid" : "fa8dfc03-3d7f-4e30-8c27-75e2958fc8be",
+    "uuid" : {
+      "value" : "fa8dfc03-3d7f-4e30-8c27-75e2958fc8be"
+    },
     "name" : "UnlimitedNatural",
-    "datatypeMapDefinition" : "xsd:string",
+    "datatypeMapDefinition" : {
+      "value" : "xsd:string"
+    },
     "type" : "PrimitiveDataType"
   } ],
-  "attributes" : [ ],
+  "dataTypedFeatures" : [ ],
   "featureLowerBounds" : [ ],
   "featureUpperBounds" : [ ],
   "featureOrdering" : [ ],

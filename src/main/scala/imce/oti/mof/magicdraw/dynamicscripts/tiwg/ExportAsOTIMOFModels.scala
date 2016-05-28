@@ -53,6 +53,7 @@ import imce.oti.mof.resolvers.UMLMetamodelResolver
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper.MagicDrawOTIDocumentSetAdapterForDataProvider
 import org.omg.oti.magicdraw.uml.read.{MagicDrawUML, MagicDrawUMLElement}
 import org.omg.oti.json.common.OTIPrimitiveTypes._
+import org.omg.oti.json.common.OTIDocumentSetConfiguration
 import org.omg.oti.json.uml.serialization.OTIJsonSerializationHelper
 import org.omg.oti.mof.schema._
 import org.omg.oti.uml._
@@ -92,7 +93,7 @@ object ExportAsOTIMOFModels {
   = Utils.browserDynamicScript(
     p, ev, script, tree, node, top, selection,
     "exportAsOTIMOFModel",
-    exportAsOTIMOFModel,
+    exportAsOTIMOFModelCallback,
     Utils.chooseOTIDocumentSetConfigurationForUserModel)
 
   def doit
@@ -107,8 +108,23 @@ object ExportAsOTIMOFModels {
   = Utils.diagramDynamicScript(
     p, ev, script, dpe, triggerView, triggerElement, selection,
     "exportAsOTIMOFModel",
-    exportAsOTIMOFModel,
+    exportAsOTIMOFModelCallback,
     Utils.chooseOTIDocumentSetConfigurationForUserModel)
+
+  def exportAsOTIMOFModelCallback
+  ( p: Project,
+    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
+    resourceExtents: Set[OTIMOFResourceExtent],
+    config: OTIDocumentSetConfiguration,
+    selectedSpecificationRootPackages: Set[UMLPackage[MagicDrawUML]] )
+  : Try[Option[MagicDrawValidationDataResults]]
+  = for {
+    cb <- exportAsOTIMOFModel(p, odsa, resourceExtents)
+    er <- Utils.exportAsOTIMOFResource(
+      p, odsa, config,
+      selectedSpecificationRootPackages,
+      resourceExtents, cb, "exportAsOTIMOFLibrary")
+  } yield er
 
   def exportAsOTIMOFModel
   ( p: Project,
@@ -149,7 +165,7 @@ object ExportAsOTIMOFModels {
         Set[UMLElement[MagicDrawUML]]] )]
 
   def onlyAppliedStereotypesByProfile
-  (modelIRI: String @@ Identification.ModelIRI,
+  (modelIRI: common.ModelIRI,
    allAppliedStereotypesByOptionalProfile: AppliedStereotypesByOptionalProfile,
    profiles: Set[OTIMOFProfileResourceExtent])
   : Vector[java.lang.Throwable] \&/ AppliedStereotypesByProfile
@@ -186,7 +202,7 @@ object ExportAsOTIMOFModels {
     _ append _)
 
   def lookupProfile
-  (applyingModel: String @@ Identification.ModelIRI,
+  (applyingModel: common.ModelIRI,
    pf: UMLProfile[MagicDrawUML],
    profiles: Set[OTIMOFProfileResourceExtent])
   : Vector[java.lang.Throwable] \&/ OTIMOFProfileResourceExtent
@@ -197,7 +213,7 @@ object ExportAsOTIMOFModels {
         Iterable(pf))))
     case Some(pfURI) =>
       profiles
-        .find { r => pfURI == Identification.ProfileIRI.unwrap(r.resource.iri) } match {
+        .find { r => pfURI == r.resource.iri.value } match {
         case None =>
           \&/.This(Vector(UMLError.illegalElementError[MagicDrawUML, UMLProfile[MagicDrawUML]](
             s"No OTI MOF Profile resource for ${pf.qualifiedName.get} with Profile::URI=$pfURI",
@@ -215,7 +231,7 @@ object ExportAsOTIMOFModels {
     .aggregate[\&/[Vector[java.lang.Throwable], Vector[model.AppliedStereotype]]](\&/.That(Vector()))(
     {
       case (acc, ((s, _), es)) =>
-        val sUUID = Identification.StereotypeUUID(TOOL_SPECIFIC_UUID.unwrap(s.toolSpecific_uuid.get))
+        val sUUID = common.StereotypeUUID(TOOL_SPECIFIC_UUID.unwrap(s.toolSpecific_uuid.get))
 
         val inc
         : Vector[java.lang.Throwable] \&/ Vector[model.AppliedStereotype]
@@ -230,7 +246,7 @@ object ExportAsOTIMOFModels {
           case Some(otiS) =>
             \&/.That(es.map { e =>
               model.AppliedStereotype(
-                modelElement = Identification.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
+                modelElement = common.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
                 appliedStereotype = otiS.uuid)
             }
               .toVector)
@@ -256,7 +272,7 @@ object ExportAsOTIMOFModels {
         \&/.That(result)
     }
 
-    modelIRI = Identification.ModelIRI(OTI_URI.unwrap(d.info.packageURI))
+    modelIRI = common.ModelIRI(OTI_URI.unwrap(d.info.packageURI))
 
     umlResolver = UMLMetamodelResolver.initialize(primitiveTypesR, umlR)
 
@@ -285,7 +301,7 @@ object ExportAsOTIMOFModels {
     umlResolver: UMLMetamodelResolver,
     profiles: Set[OTIMOFProfileResourceExtent],
     d: Document[MagicDrawUML],
-    modelIRI: String @@ Identification.ModelIRI,
+    modelIRI: common.ModelIRI,
     appliedStereotypes: Vector[model.AppliedStereotype],
     allAppliedStereotypesByProfile: AppliedStereotypesByProfile)
   : Vector[java.lang.Throwable] \&/ OTIMOFResourceExtent
@@ -360,8 +376,8 @@ object ExportAsOTIMOFModels {
   (e: UMLElement[MagicDrawUML])
   : model.ModelElement
   = model.ModelElement(
-    uuid = Identification.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
-    metaClass = Identification.MetaClassUUID(e.mofMetaclassName))
+    uuid = common.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
+    metaClass = common.MetaClassUUID(e.mofMetaclassName))
 
   def toModelElementAttributeValues
   (e: MagicDrawUMLElement,
@@ -382,7 +398,7 @@ object ExportAsOTIMOFModels {
 
           attribs
             .find { p =>
-              name == Common.Name.unwrap(p.name)
+              name == p.name.value
             } match {
 
             case None =>
@@ -402,20 +418,20 @@ object ExportAsOTIMOFModels {
                         .zipWithIndex
                         .map { case (v, i) =>
                           model.ModelElementOrderedAttributeValue(
-                            modelElement = Identification.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
+                            modelElement = common.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
                             attributeValue = values.AtomicValue(
                               attribute = attrib.uuid,
-                              value = Identification.AtomicValueRepresentation(v.toString)),
+                              value = common.AtomicValueRepresentation(v.toString)),
                             index = i)
                         }
                         .toVector
                     case v =>
                       Vector(
                         model.ModelElementOrderedAttributeValue(
-                          modelElement = Identification.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
+                          modelElement = common.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
                           attributeValue = values.AtomicValue(
                             attribute = attrib.uuid,
-                            value = Identification.AtomicValueRepresentation(v.toString)),
+                            value = common.AtomicValueRepresentation(v.toString)),
                           index = 0))
                   }
                   acc append \&/.That(attributeValues)
@@ -425,20 +441,20 @@ object ExportAsOTIMOFModels {
                       vs
                         .map { v =>
                           model.ModelElementUnorderedAttributeValue(
-                            modelElement = Identification.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
+                            modelElement = common.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
                             attributeValue = values.AtomicValue(
                               attribute = attrib.uuid,
-                              value = Identification.AtomicValueRepresentation(v.toString)))
+                              value = common.AtomicValueRepresentation(v.toString)))
                         }
                         .toVector
                     case v =>
                       if (v != default)
                         Vector(
                           model.ModelElementUnorderedAttributeValue(
-                            modelElement = Identification.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
+                            modelElement = common.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
                             attributeValue = values.AtomicValue(
                               attribute = attrib.uuid,
-                              value = Identification.AtomicValueRepresentation(v.toString))))
+                              value = common.AtomicValueRepresentation(v.toString))))
                       else
                         Vector()
                   }

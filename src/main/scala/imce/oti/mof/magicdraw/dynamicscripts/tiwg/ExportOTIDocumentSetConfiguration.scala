@@ -39,6 +39,7 @@
 package imce.oti.mof.magicdraw.dynamicscripts.tiwg
 
 import java.awt.event.ActionEvent
+import java.io.PrintWriter
 import java.lang.System
 import java.util.concurrent.TimeUnit
 
@@ -46,11 +47,12 @@ import com.nomagic.magicdraw.core.{Application, Project}
 import com.nomagic.magicdraw.ui.browser.{Node, Tree}
 import com.nomagic.magicdraw.uml.symbols.shapes.PackageView
 import com.nomagic.magicdraw.uml.symbols.{DiagramPresentationElement, PresentationElement}
-import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.{Element,Package}
+import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.{Element, Package}
 import com.nomagic.uml2.ext.magicdraw.mdprofiles.Profile
 import gov.nasa.jpl.dynamicScripts.DynamicScriptsTypes
 import gov.nasa.jpl.dynamicScripts.magicdraw.ui.symbols.internal.SymbolHelper._
 import gov.nasa.jpl.dynamicScripts.magicdraw.utils.MDUML
+import gov.nasa.jpl.dynamicScripts.magicdraw.utils.MDUML._
 import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataResults
 import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.utils.OTIHelper
 import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.validation.OTIMagicDrawValidation
@@ -238,10 +240,24 @@ object ExportOTIDocumentSetConfiguration {
     val app = Application.getInstance()
     val guiLog = app.getGUILog
 
-    val t0: Long = java.lang.System.currentTimeMillis()
+    val mdInstallDir = MDUML.getApplicationInstallDir.toPath
+    val jsonOTIDocumentConfigurationURI = mdInstallDir.resolve(s"dynamicScripts/MagicDraw-${p.getPrimaryProjectID}.documentSet.json").toUri
 
-    val jconfig = Json.toJson(config)
-    System.out.println(Json.prettyPrint(jconfig))
+    val fos = new java.io.FileOutputStream(new java.io.File(jsonOTIDocumentConfigurationURI))
+    val pw = new java.io.PrintWriter(fos)
+
+    try {
+
+      val jconfig = Json.toJson(config)
+      pw.println(Json.prettyPrint(jconfig))
+
+      guiLog.log(s"Saved OTI DocumentSet Configuration as:")
+      guiLog.log(jsonOTIDocumentConfigurationURI.toString)
+
+    } finally {
+      pw.close()
+      fos.close()
+    }
 
     ()
   }
@@ -261,13 +277,4 @@ object ExportOTIDocumentSetConfiguration {
         current.documents :+ OTIDocumentConfiguration(info, p.toolSpecific_id, p.toolSpecific_url) )
   }
 
-
-  def showJson
-  (pkg: UMLPackage[MagicDrawUML])
-  (implicit oa: MagicDrawOTIProfileAdapter)
-  : Unit
-  = {
-    val elements = pkg.allOwnedElements
-
-  }
 }

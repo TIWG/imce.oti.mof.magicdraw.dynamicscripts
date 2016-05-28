@@ -48,6 +48,7 @@ import com.nomagic.uml2.ext.magicdraw.mdprofiles.Profile
 import gov.nasa.jpl.dynamicScripts.DynamicScriptsTypes
 import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataResults
 import org.omg.oti.json.common.OTIPrimitiveTypes._
+import org.omg.oti.json.common.OTIDocumentSetConfiguration
 import org.omg.oti.json.uml.serialization.OTIJsonSerializationHelper
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper.MagicDrawOTIDocumentSetAdapterForDataProvider
 import org.omg.oti.magicdraw.uml.read.MagicDrawUML
@@ -82,7 +83,7 @@ object ExportAsOTIMOFProfiles {
   = Utils.browserDynamicScript(
     p, ev, script, tree, node, top, selection,
     "exportAsOTIMOFProfile",
-    exportAsOTIMOFProfile,
+    exportAsOTIMOFProfileCallback,
     Utils.chooseOTIDocumentSetConfigurationAndPrimitiveTypesAndUMLMetamodel)
 
   def doit
@@ -97,8 +98,23 @@ object ExportAsOTIMOFProfiles {
   = Utils.diagramDynamicScript(
     p, ev, script, dpe, triggerView, triggerElement, selection,
     "exportAsOTIMOFProfile",
-    exportAsOTIMOFProfile,
+    exportAsOTIMOFProfileCallback,
     Utils.chooseOTIDocumentSetConfigurationAndPrimitiveTypesAndUMLMetamodel)
+
+  def exportAsOTIMOFProfileCallback
+  ( p: Project,
+    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
+    resourceExtents: Set[OTIMOFResourceExtent],
+    config: OTIDocumentSetConfiguration,
+    selectedSpecificationRootPackages: Set[UMLPackage[MagicDrawUML]] )
+  : Try[Option[MagicDrawValidationDataResults]]
+  = for {
+    cb <- exportAsOTIMOFProfile(p, odsa, resourceExtents)
+    er <- Utils.exportAsOTIMOFResource(
+      p, odsa, config,
+      selectedSpecificationRootPackages,
+      resourceExtents, cb, "exportAsOTIMOFLibrary")
+  } yield er
 
   def exportAsOTIMOFProfile
   ( p: Project,
@@ -157,11 +173,11 @@ object ExportAsOTIMOFProfiles {
     for {
       s2mc <- getStereotype2ExtendedMetaclasses(ss, umlR)
       ext = OTIMOFProfileResourceExtent(
-        resource = OTIMOFProfile(Identification.ProfileIRI(OTI_URI.unwrap(d.info.packageURI))),
+        resource = OTIMOFProfile(common.ProfileIRI(OTI_URI.unwrap(d.info.packageURI))),
         classifiers = ss.map { s =>
           profile.Stereotype(
-            uuid = Identification.StereotypeUUID(TOOL_SPECIFIC_UUID.unwrap(s.toolSpecific_uuid.get)),
-            name = Common.Name(s.name.get))
+            uuid = common.StereotypeUUID(TOOL_SPECIFIC_UUID.unwrap(s.toolSpecific_uuid.get)),
+            name = common.Name(s.name.get))
         },
         extendedMetaclass = s2mc)
     } yield {
@@ -204,7 +220,7 @@ object ExportAsOTIMOFProfiles {
       umlR
         .classifiers
         .select { case umlMC: metamodel.MetaClass => umlMC }
-        .find { umlMC => Common.Name.unwrap(umlMC.name) == extMC.name.get } match {
+        .find { umlMC => umlMC.name.value == extMC.name.get } match {
         case None =>
           \&/.This(Vector(
             UMLError.illegalElementError[MagicDrawUML, UMLProperty[MagicDrawUML]](
@@ -213,7 +229,7 @@ object ExportAsOTIMOFProfiles {
         case Some(umlMC) =>
           \&/.That(Vector(
             profile.Stereotype2ExtendedMetaclass(
-              extendingStereotype = Identification.StereotypeUUID(TOOL_SPECIFIC_UUID.unwrap(s.toolSpecific_uuid.get)),
+              extendingStereotype = common.StereotypeUUID(TOOL_SPECIFIC_UUID.unwrap(s.toolSpecific_uuid.get)),
               extendedMetaclass = umlMC.uuid)))
       }
   }

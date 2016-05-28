@@ -55,8 +55,8 @@ import gov.nasa.jpl.dynamicScripts.magicdraw.utils.MDUML
 import gov.nasa.jpl.dynamicScripts.magicdraw.utils.MDUML._
 import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataResults
 import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.utils.OTIHelper
-import org.omg.oti.json.common.{OTIDocumentConfiguration, OTIDocumentSetConfiguration}
-import org.omg.oti.magicdraw.uml.canonicalXMI.helper.{MagicDrawOTIDataAdapter, MagicDrawOTIDocumentSetAdapterForDataProvider, MagicDrawOTIDocumentSetAdapterForProfileProvider, MagicDrawOTIHelper}
+import org.omg.oti.json.common.{OTIDocumentConfiguration, OTIDocumentSetConfiguration, OTIPrimitiveTypes}
+import org.omg.oti.magicdraw.uml.canonicalXMI.helper._
 import org.omg.oti.magicdraw.uml.read.MagicDrawUML
 import org.omg.oti.mof.schema._
 import org.omg.oti.uml._
@@ -132,10 +132,10 @@ object Utils {
   : Semigroup[Vector[T]]
   = Semigroup.instance(_ ++ _)
 
-  val PrimitiveTypes_IRI = Identification.LibraryIRI("http://www.omg.org/spec/PrimitiveTypes/20131001")
-  val UML25_IRI = Identification.MetamodelIRI("http://www.omg.org/spec/UML/20131001")
-  val StandardProfile_IRI = Identification.ProfileIRI("http://www.omg.org/spec/UML/20131001/StandardProfile")
-  val SysMLProfile_IRI = Identification.ProfileIRI("http://www.omg.org/spec/SysML/20131201/SysML")
+  val PrimitiveTypes_IRI = common.LibraryIRI("http://www.omg.org/spec/PrimitiveTypes/20131001")
+  val UML25_IRI = common.MetamodelIRI("http://www.omg.org/spec/UML/20131001")
+  val StandardProfile_IRI = common.ProfileIRI("http://www.omg.org/spec/UML/20131001/StandardProfile")
+  val SysMLProfile_IRI = common.ProfileIRI("http://www.omg.org/spec/SysML/20131201/SysML")
 
   val resourcesPath: String = "dynamicScripts/imce.oti.mof.magicdraw.dynamicscripts/resources/"
 
@@ -163,6 +163,103 @@ object Utils {
   (Project, MagicDrawOTIDocumentSetAdapterForDataProvider, Set[OTIMOFResourceExtent]) =>
     Try[Document[MagicDrawUML] => \&/[Vector[java.lang.Throwable], OTIMOFResourceExtent]]
 
+  type Callback =
+  ( Project,
+    MagicDrawOTIDocumentSetAdapterForDataProvider,
+    Set[OTIMOFResourceExtent],
+    OTIDocumentSetConfiguration,
+    Set[UMLPackage[MagicDrawUML]] ) =>
+    Try[Option[MagicDrawValidationDataResults]]
+
+  def mainToolbarDynamicScript
+  ( p: Project,
+    ev: ActionEvent,
+    script: DynamicScriptsTypes.MainToolbarMenuAction,
+    actionName: String,
+    action: Callback,
+    chooser: () => Try[Option[(Vector[File], Set[OTIMOFResourceExtent])]],
+    otiDocumentSetFile: Option[File] )
+  : Try[Option[MagicDrawValidationDataResults]]
+  = chooser().flatMap {
+
+    case None =>
+      val app = Application.getInstance()
+      val guiLog = app.getGUILog
+      guiLog.clearLog()
+      guiLog.log(s"$actionName cancelled")
+      Success(None)
+
+    case Some((otiDocumentConfigurationFiles, resourceExtents)) =>
+
+      val otiDocumentConfigurationContents
+      : Vector[String]
+      = otiDocumentConfigurationFiles.map(Source.fromFile(_)(Codec.UTF8).getLines.mkString).toVector
+
+      val otiDocumentConfigurationJs
+      : Vector[JsResult[OTIDocumentSetConfiguration]]
+      = otiDocumentConfigurationContents.map { s =>
+        Json.parse(s).validate[OTIDocumentSetConfiguration]
+      }
+
+      val otiDocumentConfigurationsOrErrors
+      : Try[Vector[OTIDocumentSetConfiguration]]
+      = otiDocumentConfigurationJs.foldLeft[Try[Vector[OTIDocumentSetConfiguration]]](Success(Vector())) {
+        case (_, e: JsError) =>
+          Failure(new java.lang.IllegalArgumentException(e.toString))
+
+        case (Failure(t), _) =>
+          Failure(t)
+
+        case (Success(acc), JsSuccess(otiDocumentConfigurationSet, _)) =>
+          Success(acc :+ otiDocumentConfigurationSet)
+      }
+
+      otiDocumentConfigurationsOrErrors.flatMap { otiDocumentConfigurations =>
+
+        loadOTIDocumentSet(otiDocumentSetFile).flatMap { documentSelection =>
+
+          OTIHelper
+            .toTry(
+              MagicDrawOTIHelper.getOTIMagicDrawDataAdapter(p, otiDocumentConfigurations ++ documentSelection),
+              (oa: MagicDrawOTIDataAdapter) => {
+                val app = Application.getInstance()
+                val guiLog = app.getGUILog
+                guiLog.clearLog()
+
+                implicit val umlOps = oa.umlOps
+
+                val init
+                : Set[java.lang.Throwable] \&/ Set[UMLPackage[MagicDrawUML]]
+                = Set.empty[UMLPackage[MagicDrawUML]].that
+
+                val config = documentSelection.getOrElse(OTIDocumentSetConfiguration.empty)
+
+                val result = for {
+                  odsa <- MagicDrawOTIAdapters.withInitialDocumentSetForDataAdapter(oa)
+
+                  selectedSpecificationRootPackages <- (init /: config.documents) {
+                    lookupAndAddDocumentPackage(p, odsa)
+                  }
+
+                } yield
+                  for {
+                    er <- action(
+                      p, odsa, resourceExtents, config,
+                      selectedSpecificationRootPackages)
+                  } yield er
+
+                result.a match {
+                  case None =>
+                    Success(None)
+
+                  case Some(errors) =>
+                    Failure(errors.head)
+                }
+              })
+        }
+      }
+  }
+
   def diagramDynamicScript
   ( p: Project,
     ev: ActionEvent,
@@ -172,7 +269,7 @@ object Utils {
     triggerElement: Package,
     selection: java.util.Collection[PresentationElement],
     actionName: String,
-    action: OTIDocument2MOFResource,
+    action: Callback,
     chooser: () => Try[Option[(Vector[File], Set[OTIMOFResourceExtent])]])
   : Try[Option[MagicDrawValidationDataResults]]
   = chooser().flatMap {
@@ -257,11 +354,9 @@ object Utils {
                   }
                 } yield
                 for {
-                  cb <- action(p, odsa, resourceExtents)
-                  er <- exportAsOTIMOFResource(
-                    p, odsa, config,
-                    selectedSpecificationRootPackages,
-                    resourceExtents, cb, actionName)
+                  er <- action(
+                    p, odsa, resourceExtents, config,
+                    selectedSpecificationRootPackages)
                 } yield er
 
                 result.a match {
@@ -283,7 +378,7 @@ object Utils {
     top: Package,
     selection: java.util.Collection[_ <: Package],
     actionName: String,
-    action: OTIDocument2MOFResource,
+    action: Callback,
     chooser: () => Try[Option[(Vector[File], Set[OTIMOFResourceExtent])]])
   : Try[Option[MagicDrawValidationDataResults]]
   = chooser().flatMap {
@@ -365,11 +460,9 @@ object Utils {
                   }
                 } yield
                   for {
-                    cb <- action(p, odsa, resourceExtents)
-                    er <- exportAsOTIMOFResource(
-                      p, odsa, config,
-                      selectedSpecificationRootPackages,
-                      resourceExtents, cb, actionName)
+                    er <- action(
+                      p, odsa, resourceExtents, config,
+                      selectedSpecificationRootPackages)
                   } yield er
 
                 result.onlyThisOrThat match {
@@ -499,6 +592,21 @@ object Utils {
       Success(Some(file))
     else
       chooser()
+  }
+
+  def loadOTIDocumentSet
+  (jsonFile: Option[File])
+  (implicit formats: Format[OTIDocumentSetConfiguration])
+  : Try[Option[OTIDocumentSetConfiguration]]
+  = jsonFile
+    .fold[Try[Option[OTIDocumentSetConfiguration]]](Success(None)) { f =>
+    val extent = Json.parse(Source.fromFile(f)(Codec.UTF8).getLines.mkString)
+    extent.validate[OTIDocumentSetConfiguration] match {
+      case e: JsError =>
+        Failure(new java.lang.IllegalArgumentException(e.toString))
+      case JsSuccess(ds, _) =>
+        Success(Some(ds))
+    }
   }
 
   def loadOTIMOFResourceExtent[T <: OTIMOFResourceExtent]
@@ -643,6 +751,23 @@ object Utils {
       ff5 <- f5
       ff6 <- f6
     } yield (Vector(ff1, ff2), Set[OTIMOFResourceExtent](ff3, ff4, ff5, ff6))
+
+  def lookupAndAddDocumentPackage
+  ( p: Project,
+    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider )
+  ( current: Set[java.lang.Throwable] \&/ Set[UMLPackage[MagicDrawUML]],
+    d: OTIDocumentConfiguration )
+  : Set[java.lang.Throwable] \&/ Set[UMLPackage[MagicDrawUML]]
+  = for {
+    pkgs <- current
+    id = OTIPrimitiveTypes.TOOL_SPECIFIC_ID.unwrap(d.toolSpecificPackageID)
+    pkg <- p.getElementByID(id) match {
+      case p: Package =>
+        \&/.That(odsa.documentOps.umlOps.umlPackage(p))
+      case _ =>
+        \&/.This(Set[java.lang.Throwable](UMLError.umlAdaptationError(s"No MD package/profile found with ID=$id")))
+    }
+  } yield pkgs + pkg
 
   def addSpecificationRootPackageForDataProvider
   (odsa: MagicDrawOTIDocumentSetAdapterForDataProvider)
