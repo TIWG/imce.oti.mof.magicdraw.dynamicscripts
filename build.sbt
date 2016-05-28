@@ -151,7 +151,7 @@ lazy val core = Project("imce-oti-mof-magicdraw-dynamicscripts", file("."))
     "imce-oti-uml-magicdraw-dynamicscripts",
     "imce.oti.uml.magicdraw.dynamicscripts",
     Seq(
-      "org.omg.tiwg" %% "imce-oti-uml-magicdraw-dynamicscripts"
+      "gov.nasa.jpl.imce.oti" %% "imce-oti-uml-magicdraw-dynamicscripts"
         % Versions_imce_oti_uml_magicdraw_dynamicscripts.version % "compile"
         withSources() withJavadoc() artifacts
         Artifact("imce-oti-uml-magicdraw-dynamicscripts", "zip", "zip", Some("resource"), Seq(), None, Map())
