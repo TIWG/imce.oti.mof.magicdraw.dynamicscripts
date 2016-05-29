@@ -250,7 +250,12 @@ object Utils {
 
                 result.a match {
                   case None =>
-                    Success(None)
+                    result.b match {
+                      case None =>
+                        Success(None)
+                      case Some(successOrError) =>
+                        successOrError
+                    }
 
                   case Some(errors) =>
                     Failure(errors.head)
