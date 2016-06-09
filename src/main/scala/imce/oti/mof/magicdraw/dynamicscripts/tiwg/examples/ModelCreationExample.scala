@@ -41,6 +41,7 @@ package imce.oti.mof.magicdraw.dynamicscripts.tiwg.examples
 import java.awt.event.ActionEvent
 import java.io.File
 import java.lang.System
+import java.nio.file.{Files,Path}
 
 import com.nomagic.magicdraw.core.{Application, ApplicationEnvironment, Project}
 import com.nomagic.magicdraw.core.project.{ProjectDescriptorsFactory, ProjectsManager}
@@ -59,11 +60,27 @@ import org.omg.oti.uml.read.api._
 import scala.Predef.{Map => _, Set => _}
 import scala.collection.immutable._
 import scala.util.control.Exception._
-import scala.{Boolean, None, Option, Some, StringContext, Unit}
 import scala.util.{Failure, Success, Try}
+import scala.{Boolean, None, Option, Some, StringContext, Unit}
+import scala.Predef.String
 import scalaz._
 
 object ModelCreationExample {
+
+  def createParentRelativePathsForFilename(dir: Path, relPathname: String, fileName: String)
+  : Try[File]
+  =  {
+    val rdir = dir.resolve(relPathname)
+    catching(nonFatalCatcher)
+      .either({
+        Files.createDirectories(rdir)
+        rdir.resolve(fileName).toFile
+      })
+      .fold[Try[File]](
+      (error: java.lang.Throwable) => Failure(error),
+      (f: File) => Success(f)
+    )
+  }
 
   def example
   (p: Project, ev: ActionEvent, script: MainToolbarMenuAction)
@@ -74,48 +91,66 @@ object ModelCreationExample {
     val a = Application.getInstance
     val pm = a.getProjectsManager
     val root = MDUML.getApplicationInstallDir
-    val templateUri = root.toPath.resolve("templates/SysML/SysML.mdzip").toUri
-    val exampleFile = root.toPath.resolve("samples/SysML/ModelCreationExample.mdzip").toFile
-    val load = ProjectDescriptorsFactory.createProjectDescriptor(templateUri)
-    val silent = true
-    catching(nonFatalCatcher)
-      .either({
-        // save a copy of the template project
-        pm.loadProject(load, silent)
-        val project = a.getProject
-        val save = ProjectDescriptorsFactory.createLocalProjectDescriptor(project, exampleFile)
-        pm.saveProject(save, silent)
-        project
-      })
-      .fold[Try[Option[MagicDrawValidationDataResults]]](
-      (error: java.lang.Throwable) => Failure(error),
-      (project: Project) =>
-        // do the actual creation in the context of the copy of the project template
-        Utils
-          .mainToolbarDynamicScript(
-          project, ev, script,
-          "ModelCreationExample",
-          exampleCallback,
-          Utils.chooseOTIDocumentSetConfigurationAndPrimitiveTypesAndUMLMetamodelAndStandardProfile,
-          Option.empty[File])
-        .flatMap { result =>
-          catching(nonFatalCatcher)
-            .either({
-              // try to save the updated project
-              val save = ProjectDescriptorsFactory.createLocalProjectDescriptor(project)
-              pm.saveProject(save, silent)
-            })
-            .fold[Try[Option[MagicDrawValidationDataResults]]](
-            (error: java.lang.Throwable) => Failure(error),
-            (saved: Boolean) =>
-               if (saved)
-                 Success(result)
-               else
-                 Failure(new java.lang.IllegalArgumentException(
-                   s"Failed to save the example project to $exampleFile"))
-          )
-        }
-    )
+    for {
+      resultsPath <- Option.apply(System.getProperty("DYNAMIC_SCRIPTS_RESULTS_DIR")) match {
+        case None =>
+          System.out.println(s"No DYNAMIC_SCRIPTS_RESULTS_DIR set, using MD's installation directory instead.")
+          Success(root.toPath)
+        case Some(resultsLoc) =>
+          val resultsDir = new File(resultsLoc)
+          if (!resultsDir.exists() || !resultsDir.isDirectory || !resultsDir.canWrite)
+            Failure(new java.lang.IllegalArgumentException(
+              s"DYNAMIC_SCRIPTS_RESULTS_DIR='$resultsLoc' must be an existing writeable directory."))
+          else
+            Success(resultsDir.toPath)
+      }
+      templateUri = root.toPath.resolve("templates/SysML/SysML.mdzip").toUri
+      exampleLoadFile <-
+      createParentRelativePathsForFilename(resultsPath, "samples/SysML/created", "ModelCreationExample.mdzip")
+      exampleSaveFile <-
+      createParentRelativePathsForFilename(resultsPath, "samples/SysML/updated", "ModelCreationExample.mdzip")
+
+      load = ProjectDescriptorsFactory.createProjectDescriptor(templateUri)
+      silent = true
+      result <- catching(nonFatalCatcher)
+        .either({
+          // save a copy of the template project
+          pm.loadProject(load, silent)
+          val project = a.getProject
+          val d = ProjectDescriptorsFactory.createLocalProjectDescriptor(project, exampleLoadFile)
+          pm.saveProject(d, silent)
+          project
+        })
+        .fold[Try[Option[MagicDrawValidationDataResults]]](
+        (error: java.lang.Throwable) => Failure(error),
+        (project: Project) =>
+          // do the actual creation in the context of the copy of the project template
+          Utils
+            .mainToolbarDynamicScript(
+              project, ev, script,
+              "ModelCreationExample",
+              exampleCallback,
+              Utils.chooseOTIDocumentSetConfigurationAndPrimitiveTypesAndUMLMetamodelAndStandardProfile,
+              Option.empty[File])
+            .flatMap { result =>
+              catching(nonFatalCatcher)
+                .either({
+                  // try to save the updated project
+                  val d = ProjectDescriptorsFactory.createLocalProjectDescriptor(project, exampleSaveFile)
+                  pm.saveProject(d, silent)
+                })
+                .fold[Try[Option[MagicDrawValidationDataResults]]](
+                (error: java.lang.Throwable) => Failure(error),
+                (saved: Boolean) =>
+                  if (saved)
+                    Success(result)
+                  else
+                    Failure(new java.lang.IllegalArgumentException(
+                      s"Failed to save the example project to $exampleSaveFile"))
+              )
+            }
+      )
+    } yield result
   }
 
   def exampleCallback
