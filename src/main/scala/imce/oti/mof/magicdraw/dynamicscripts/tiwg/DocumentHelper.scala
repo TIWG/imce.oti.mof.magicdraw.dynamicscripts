@@ -36,52 +36,19 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package imce.oti.mof.resolvers
+package imce.oti.mof.magicdraw.dynamicscripts.tiwg
 
-import imce.oti.mof.magicdraw.dynamicscripts.tiwg._
+import org.omg.oti.json.common.OTIPrimitiveTypes._
+import org.omg.oti.uml.xmi.Document
 import org.omg.oti.magicdraw.uml.read.MagicDrawUML
-import org.omg.oti.mof.schema._
-import org.omg.oti.uml.read.api.{UMLClass, UMLDataType, UMLEnumeration, UMLPrimitiveType, UMLProperty}
-import org.omg.oti.uml.UMLError
+import org.omg.oti.mof.schema.common
 
-import scala.collection.immutable.Iterable
-import scala.{AnyVal,None,Some,StringContext}
+import scala.AnyVal
 
-object OTIHelpers {
+class DocumentHelper(val d: Document[MagicDrawUML]) extends AnyVal {
 
-  implicit def toOTIPropertyHelper(p: UMLProperty[MagicDrawUML])
-  : OTIPropertyHelper
-  = new OTIPropertyHelper(p)
+  def toOTIMOFResourceIRI
+  : common.ResourceIRI
+  = common.ResourceIRI(OTI_URI.unwrap(d.info.packageURI))
 
-  class OTIPropertyHelper(val p: UMLProperty[MagicDrawUML]) extends AnyVal {
-
-    def getMetaClassUUID()
-    : common.EntityUUID
-    = p._type match {
-      case Some(mc: UMLClass[MagicDrawUML]) =>
-        mc.toOTIMOFEntityUUID
-      case _ =>
-        throw UMLError.illegalElementError[MagicDrawUML, UMLProperty[MagicDrawUML]](
-          s"Property should be typed by a UMLClass[MagicDrawUML]",
-          Iterable(p))
-    }
-
-    def getSchemaDatatypeUUID()
-    : common.EntityUUID
-    = p._type match {
-      case Some(dt: UMLDataType[MagicDrawUML]) =>
-        dt match {
-          case t: UMLPrimitiveType[MagicDrawUML] =>
-            t.toOTIMOFEntityUUID
-          case t: UMLEnumeration[MagicDrawUML] =>
-            t.toOTIMOFEntityUUID
-          case t =>
-            t.toOTIMOFEntityUUID
-        }
-      case _ =>
-        throw UMLError.illegalElementError[MagicDrawUML, UMLProperty[MagicDrawUML]](
-        s"Property should be typed by a UMLDataType[MagicDrawUML]",
-        Iterable(p))
-    }
-  }
 }

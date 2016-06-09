@@ -62,7 +62,7 @@ case class UMLMetamodelResolver
  : Map[metamodel.MetaClass, Set[metamodel.MetaClass]],
 
  mcName2UUID
- : Map[String, common.MetaClassUUID],
+ : Map[String, common.EntityUUID],
 
  mc2AllAttributes
  : Map[String, Set[features.DataTypedAttributeUnorderedProperty]])
@@ -110,7 +110,7 @@ object UMLMetamodelResolver {
       .getOrElse(mc, Set.empty[metamodel.MetaClass])
 
     val mcName2UUID
-    : Map[String, common.MetaClassUUID]
+    : Map[String, common.EntityUUID]
     = metaclasses.map { mc =>
       mc.name.value -> mc.uuid
     }.toMap

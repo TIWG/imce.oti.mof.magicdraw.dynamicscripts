@@ -132,10 +132,10 @@ object Utils {
   : Semigroup[Vector[T]]
   = Semigroup.instance(_ ++ _)
 
-  val PrimitiveTypes_IRI = common.LibraryIRI("http://www.omg.org/spec/PrimitiveTypes/20131001")
-  val UML25_IRI = common.MetamodelIRI("http://www.omg.org/spec/UML/20131001")
-  val StandardProfile_IRI = common.ProfileIRI("http://www.omg.org/spec/UML/20131001/StandardProfile")
-  val SysMLProfile_IRI = common.ProfileIRI("http://www.omg.org/spec/SysML/20131201/SysML")
+  val PrimitiveTypes_IRI = common.ResourceIRI("http://www.omg.org/spec/PrimitiveTypes/20131001")
+  val UML25_IRI = common.ResourceIRI("http://www.omg.org/spec/UML/20131001")
+  val StandardProfile_IRI = common.ResourceIRI("http://www.omg.org/spec/UML/20131001/StandardProfile")
+  val SysMLProfile_IRI = common.ResourceIRI("http://www.omg.org/spec/SysML/20131201/SysML")
 
   val resourcesPath: String = "dynamicScripts/imce.oti.mof.magicdraw.dynamicscripts/resources/"
 
@@ -366,7 +366,12 @@ object Utils {
 
                 result.a match {
                   case None =>
-                    Success(None)
+                    result.b match {
+                      case None =>
+                        Success(None)
+                      case Some(r) =>
+                        r
+                    }
 
                   case Some(errors) =>
                     Failure(errors.head)
@@ -578,10 +583,12 @@ object Utils {
     guiLog.log(s"Exported OTI MOF Model as $jsonExportZipURI")
     guiLog.log(s"${errors.size} errors")
 
-    System.err.println(s"${errors.size} errors")
+    System.err.println(s"\n***\n${errors.size} errors\n****")
     errors.foreach { e =>
       System.err.println(e)
+      System.err.println()
     }
+    System.err.println(s"\n*******\n")
 
     Success(None)
   }

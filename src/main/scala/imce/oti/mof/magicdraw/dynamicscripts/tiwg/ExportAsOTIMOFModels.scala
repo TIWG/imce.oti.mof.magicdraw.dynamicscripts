@@ -47,14 +47,18 @@ import com.nomagic.magicdraw.uml.symbols.{DiagramPresentationElement, Presentati
 import com.nomagic.magicdraw.uml.symbols.shapes.PackageView
 import com.nomagic.uml2.ext.jmi.helpers.StereotypesHelper
 import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Package
+
 import gov.nasa.jpl.dynamicScripts.DynamicScriptsTypes
 import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataResults
+
 import imce.oti.mof.resolvers.UMLMetamodelResolver
+
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper.MagicDrawOTIDocumentSetAdapterForDataProvider
 import org.omg.oti.magicdraw.uml.read.{MagicDrawUML, MagicDrawUMLElement}
-import org.omg.oti.json.common.OTIPrimitiveTypes._
+
 import org.omg.oti.json.common.OTIDocumentSetConfiguration
 import org.omg.oti.json.uml.serialization.OTIJsonSerializationHelper
+
 import org.omg.oti.mof.schema._
 import org.omg.oti.uml._
 import org.omg.oti.uml.characteristics.OTICharacteristicsProvider
@@ -126,20 +130,22 @@ object ExportAsOTIMOFModels {
       resourceExtents, cb, "exportAsOTIMOFLibrary")
   } yield er
 
+  // need something to only go over non-profile document packages!
+
   def exportAsOTIMOFModel
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
     resourceExtents: Set[OTIMOFResourceExtent])
   : Try[Document[MagicDrawUML] => \&/[Vector[java.lang.Throwable], OTIMOFResourceExtent]]
   = resourceExtents.find(Utils.PrimitiveTypes_IRI == _.resource.iri) match {
-    case Some(pt: OTIMOFLibraryResourceExtent) =>
+    case Some(primitiveTypesR: OTIMOFLibraryResourceExtent) =>
       resourceExtents.find(Utils.UML25_IRI == _.resource.iri) match {
-        case Some(mm: OTIMOFMetamodelResourceExtent) =>
+        case Some(umlR: OTIMOFMetamodelResourceExtent) =>
           import Utils.selectable
+          implicit val umlResolver = UMLMetamodelResolver.initialize(primitiveTypesR, umlR)
           Success(
             exportAsOTIMOFModel(
               p, odsa,
-              pt, mm,
               resourceExtents.select { case pfExt: OTIMOFProfileResourceExtent => pfExt }))
         case _ =>
           Failure(new java.lang.IllegalArgumentException("No MD18 UML2.5 metamodel resource found!"))
@@ -165,7 +171,7 @@ object ExportAsOTIMOFModels {
         Set[UMLElement[MagicDrawUML]]] )]
 
   def onlyAppliedStereotypesByProfile
-  (modelIRI: common.ModelIRI,
+  (modelIRI: common.ResourceIRI,
    allAppliedStereotypesByOptionalProfile: AppliedStereotypesByOptionalProfile,
    profiles: Set[OTIMOFProfileResourceExtent])
   : Vector[java.lang.Throwable] \&/ AppliedStereotypesByProfile
@@ -202,7 +208,7 @@ object ExportAsOTIMOFModels {
     _ append _)
 
   def lookupProfile
-  (applyingModel: common.ModelIRI,
+  (applyingModel: common.ResourceIRI,
    pf: UMLProfile[MagicDrawUML],
    profiles: Set[OTIMOFProfileResourceExtent])
   : Vector[java.lang.Throwable] \&/ OTIMOFProfileResourceExtent
@@ -231,13 +237,19 @@ object ExportAsOTIMOFModels {
     .aggregate[\&/[Vector[java.lang.Throwable], Vector[model.AppliedStereotype]]](\&/.That(Vector()))(
     {
       case (acc, ((s, _), es)) =>
-        val sUUID = common.StereotypeUUID(TOOL_SPECIFIC_UUID.unwrap(s.toolSpecific_uuid.get))
+        val sUUID = s.toOTIMOFEntityUUID
+
+        val ps = pfR.classifiers.find { c =>
+          val ok = sUUID == c.uuid
+          if (ok)
+            true
+          else
+            false
+        }
 
         val inc
         : Vector[java.lang.Throwable] \&/ Vector[model.AppliedStereotype]
-        = pfR
-          .classifiers
-          .find(sUUID == _.uuid) match {
+        = ps match {
           case None =>
             \&/.This(Vector(UMLError.illegalElementError[MagicDrawUML, UMLStereotype[MagicDrawUML]](
               s"Unknown stereotype '${s.qualifiedName.get}' applied to ${es.size} elements",
@@ -246,7 +258,7 @@ object ExportAsOTIMOFModels {
           case Some(otiS) =>
             \&/.That(es.map { e =>
               model.AppliedStereotype(
-                modelElement = common.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
+                modelElement = e.toOTIMOFEntityUUID,
                 appliedStereotype = otiS.uuid)
             }
               .toVector)
@@ -259,10 +271,9 @@ object ExportAsOTIMOFModels {
   def exportAsOTIMOFModel
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
-    primitiveTypesR: OTIMOFLibraryResourceExtent,
-    umlR: OTIMOFMetamodelResourceExtent,
     profiles: Set[OTIMOFProfileResourceExtent] )
   ( d: Document[MagicDrawUML] )
+  ( implicit umlResolver: UMLMetamodelResolver )
   : Vector[java.lang.Throwable] \&/ OTIMOFResourceExtent
   = for {
     allAppliedStereotypesByOptionalProfile <- d.scope.allAppliedStereotypesByProfile match {
@@ -272,9 +283,7 @@ object ExportAsOTIMOFModels {
         \&/.That(result)
     }
 
-    modelIRI = common.ModelIRI(OTI_URI.unwrap(d.info.packageURI))
-
-    umlResolver = UMLMetamodelResolver.initialize(primitiveTypesR, umlR)
+    modelIRI = d.toOTIMOFResourceIRI
 
     allAppliedStereotypesByProfile <-
     onlyAppliedStereotypesByProfile(modelIRI, allAppliedStereotypesByOptionalProfile, profiles)
@@ -284,26 +293,27 @@ object ExportAsOTIMOFModels {
       {
         case (acc, (_, pfR, _, stereotypedElements)) =>
           import Utils.VectorSemigroup
-          acc append toAppliedStereotypes(pfR, stereotypedElements)
+          val inc = toAppliedStereotypes(pfR, stereotypedElements)
+          val updated = acc append inc
+          updated
       },
       _ append _)
 
     result <- exportAsOTIMOFModelExtent(
-      p, odsa,
-      umlResolver, profiles,
-      d, modelIRI, appliedStereotypes, allAppliedStereotypesByProfile)
+      p, odsa, profiles,
+      d, modelIRI, appliedStereotypes, allAppliedStereotypesByProfile)(umlResolver)
 
   } yield result
 
   def exportAsOTIMOFModelExtent
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
-    umlResolver: UMLMetamodelResolver,
     profiles: Set[OTIMOFProfileResourceExtent],
     d: Document[MagicDrawUML],
-    modelIRI: common.ModelIRI,
+    modelIRI: common.ResourceIRI,
     appliedStereotypes: Vector[model.AppliedStereotype],
     allAppliedStereotypesByProfile: AppliedStereotypesByProfile)
+  (implicit umlResolver: UMLMetamodelResolver)
   : Vector[java.lang.Throwable] \&/ OTIMOFResourceExtent
   = {
     implicit val ops = odsa.otiAdapter.umlOps
@@ -318,14 +328,14 @@ object ExportAsOTIMOFModels {
 
     val pExtent = d.extent match {
       case ex: Set[UMLElement[MagicDrawUML]] =>
-        ex.map(ops.umlMagicDrawUMLElement).par
+        ex.map(ops.umlMagicDrawUMLElement) //.par
       case ex =>
-        ex.map(ops.umlMagicDrawUMLElement).toSet.par
+        ex.map(ops.umlMagicDrawUMLElement).toSet //.par
     }
 
-    pExtent.tasksupport =
-      new scala.collection.parallel.ForkJoinTaskSupport(
-        new scala.concurrent.forkjoin.ForkJoinPool(Utils.poolSize))
+//    pExtent.tasksupport =
+//      new scala.collection.parallel.ForkJoinTaskSupport(
+//        new scala.concurrent.forkjoin.ForkJoinPool(Utils.poolSize))
 
     val elements
     : Vector[model.ModelElement]
@@ -374,10 +384,11 @@ object ExportAsOTIMOFModels {
 
   def toModelElement
   (e: UMLElement[MagicDrawUML])
+  (implicit umlResolver: UMLMetamodelResolver)
   : model.ModelElement
   = model.ModelElement(
-    uuid = common.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
-    metaClass = common.MetaClassUUID(e.mofMetaclassName))
+    uuid = e.toOTIMOFEntityUUID,
+    metaClass = umlResolver.mcName2UUID(e.mofMetaclassName))
 
   def toModelElementAttributeValues
   (e: MagicDrawUMLElement,
@@ -418,7 +429,7 @@ object ExportAsOTIMOFModels {
                         .zipWithIndex
                         .map { case (v, i) =>
                           model.ModelElementOrderedAttributeValue(
-                            modelElement = common.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
+                            modelElement = e.toOTIMOFEntityUUID,
                             attributeValue = values.AtomicValue(
                               attribute = attrib.uuid,
                               value = common.AtomicValueRepresentation(v.toString)),
@@ -428,7 +439,7 @@ object ExportAsOTIMOFModels {
                     case v =>
                       Vector(
                         model.ModelElementOrderedAttributeValue(
-                          modelElement = common.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
+                          modelElement = e.toOTIMOFEntityUUID,
                           attributeValue = values.AtomicValue(
                             attribute = attrib.uuid,
                             value = common.AtomicValueRepresentation(v.toString)),
@@ -441,7 +452,7 @@ object ExportAsOTIMOFModels {
                       vs
                         .map { v =>
                           model.ModelElementUnorderedAttributeValue(
-                            modelElement = common.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
+                            modelElement = e.toOTIMOFEntityUUID,
                             attributeValue = values.AtomicValue(
                               attribute = attrib.uuid,
                               value = common.AtomicValueRepresentation(v.toString)))
@@ -451,7 +462,7 @@ object ExportAsOTIMOFModels {
                       if (v != default)
                         Vector(
                           model.ModelElementUnorderedAttributeValue(
-                            modelElement = common.ModelElementUUID(TOOL_SPECIFIC_UUID.unwrap(e.toolSpecific_uuid.get)),
+                            modelElement = e.toOTIMOFEntityUUID,
                             attributeValue = values.AtomicValue(
                               attribute = attrib.uuid,
                               value = common.AtomicValueRepresentation(v.toString))))

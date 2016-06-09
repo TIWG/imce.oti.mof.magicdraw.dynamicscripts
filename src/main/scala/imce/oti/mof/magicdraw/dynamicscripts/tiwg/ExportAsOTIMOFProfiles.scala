@@ -45,20 +45,24 @@ import com.nomagic.magicdraw.ui.browser.{Node, Tree}
 import com.nomagic.magicdraw.uml.symbols.shapes.PackageView
 import com.nomagic.magicdraw.uml.symbols.{DiagramPresentationElement, PresentationElement}
 import com.nomagic.uml2.ext.magicdraw.mdprofiles.Profile
+
+import imce.oti.mof.resolvers.UMLMetamodelResolver
+
 import gov.nasa.jpl.dynamicScripts.DynamicScriptsTypes
 import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataResults
-import org.omg.oti.json.common.OTIPrimitiveTypes._
+import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.ui.ProfileInspectorWidget
+
 import org.omg.oti.json.common.OTIDocumentSetConfiguration
 import org.omg.oti.json.uml.serialization.OTIJsonSerializationHelper
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper.MagicDrawOTIDocumentSetAdapterForDataProvider
 import org.omg.oti.magicdraw.uml.read.MagicDrawUML
 import org.omg.oti.mof.schema._
 import org.omg.oti.uml._
-import org.omg.oti.uml.read.api.{UMLPackage, UMLProfile, UMLProperty, UMLStereotype}
+import org.omg.oti.uml.read.api._
 import org.omg.oti.uml.xmi.Document
 
 import scala.collection.immutable._
-import scala.{Option, None, PartialFunction, Some, StringContext}
+import scala.{Int, None, Option, PartialFunction, Some, StringContext, Tuple4}
 import scala.util.{Failure, Success, Try}
 import scalaz._
 
@@ -122,10 +126,11 @@ object ExportAsOTIMOFProfiles {
     resourceExtents: Set[OTIMOFResourceExtent])
   : Try[Document[MagicDrawUML] => \&/[Vector[java.lang.Throwable], OTIMOFResourceExtent]]
   = resourceExtents.find(Utils.PrimitiveTypes_IRI == _.resource.iri) match {
-    case Some(pt: OTIMOFLibraryResourceExtent) =>
+    case Some(primitiveTypesR: OTIMOFLibraryResourceExtent) =>
       resourceExtents.find(Utils.UML25_IRI == _.resource.iri) match {
-        case Some(mm: OTIMOFMetamodelResourceExtent) =>
-          Success(exportAsOTIMOFProfile(p, odsa, pt, mm) _)
+        case Some(umlR: OTIMOFMetamodelResourceExtent) =>
+          val umlResolver = UMLMetamodelResolver.initialize(primitiveTypesR, umlR)
+          Success(exportAsOTIMOFProfile(p, odsa, umlResolver) _)
         case _ =>
           Failure(new java.lang.IllegalArgumentException("No MD18 UML2.5 metamodel resource found!"))
       }
@@ -136,13 +141,12 @@ object ExportAsOTIMOFProfiles {
   def exportAsOTIMOFProfile
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
-    pt: OTIMOFLibraryResourceExtent,
-    umlR: OTIMOFMetamodelResourceExtent )
+    umlResolver: UMLMetamodelResolver )
   ( d: Document[MagicDrawUML] )
   : Vector[java.lang.Throwable] \&/ OTIMOFResourceExtent
   = d.scope match {
     case pf: UMLProfile[MagicDrawUML] =>
-      exportAsOTIMOFProfile(p, odsa, pt, umlR, d, pf)
+      exportAsOTIMOFProfile(p, odsa, d, pf)(umlResolver)
     case pkg =>
       \&/.This(Vector(UMLError.illegalElementError[MagicDrawUML, UMLPackage[MagicDrawUML]](
         s"Cannot export package ${pkg.qualifiedName.get} as an OTIMOFProfile",
@@ -152,16 +156,18 @@ object ExportAsOTIMOFProfiles {
   def exportAsOTIMOFProfile
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
-    pt: OTIMOFLibraryResourceExtent,
-    umlR: OTIMOFMetamodelResourceExtent,
     d: Document[MagicDrawUML],
     pf: UMLProfile[MagicDrawUML] )
+  (implicit umlResolver: UMLMetamodelResolver)
   : Vector[java.lang.Throwable] \&/ OTIMOFResourceExtent
   = {
     val app = Application.getInstance()
     val guiLog = app.getGUILog
 
     implicit val ops = odsa.otiAdapter.umlOps
+    import umlResolver._
+
+    val allImportedPFs = pf.allImportedProfilesTransitively
 
     val ss
     : Vector[UMLStereotype[MagicDrawUML]]
@@ -170,16 +176,190 @@ object ExportAsOTIMOFProfiles {
       .to[Vector]
       .sortBy(_.name.get)
 
+    val sas
+    : Vector[(UMLStereotype[MagicDrawUML], UMLProperty[MagicDrawUML], common.EntityUUID, Int)]
+    = ss.flatMap { s =>
+      s
+        .ownedAttribute
+        .zipWithIndex
+        .flatMap { case (p,i) =>
+        p._type match {
+          case Some(dt: UMLDataType[MagicDrawUML]) =>
+            dt.name match {
+              case None =>
+                throw new java.lang.IllegalArgumentException(s"Stereotype property ${p.qualifiedName.get} must be typed by a named data type")
+              case Some(dtName) =>
+                primitiveTypesR.classifiers.find(_.name.value == dtName).map { cls =>
+                  Tuple4(s, p, cls.uuid, i)
+                }
+            }
+          case _ =>
+            None
+        }
+      }
+    }
+
+    val sms
+    : Vector[(UMLStereotype[MagicDrawUML], UMLProperty[MagicDrawUML], common.EntityUUID)]
+    = ss.flatMap { s =>
+      s.attribute.flatMap {
+        case p if !p.isDerived && p.extension.isEmpty =>
+          p._type match {
+            case Some(_: UMLStereotype[MagicDrawUML]) =>
+              None
+            case Some(mc: UMLClass[MagicDrawUML]) =>
+              mc.name match {
+                case None =>
+                  throw new java.lang.IllegalArgumentException(s"Stereotype property ${p.qualifiedName.get} must be typed by a named class")
+                case Some(mcName) =>
+                  mcName2UUID.get(mcName) match {
+                    case None =>
+                      throw new java.lang.IllegalArgumentException(s"Stereotype property ${p.qualifiedName.get} must be typed by a known metaclass!")
+                    case Some(mcUUID) =>
+                      Some((s, p, mcUUID))
+                  }
+              }
+            case _ =>
+              None
+          }
+        case _ =>
+          None
+      }
+    }
+
+    val sss
+    : Vector[(UMLStereotype[MagicDrawUML], UMLProperty[MagicDrawUML], UMLStereotype[MagicDrawUML])]
+    = ss.flatMap { s =>
+      s.attribute.flatMap {
+        case p if !p.isDerived =>
+          p._type match {
+            case Some(ps: UMLStereotype[MagicDrawUML]) if ss.contains(ps) =>
+              Some((s, p, ps))
+            case _ =>
+              None
+          }
+        case _ =>
+          None
+      }
+    }
+
     for {
       s2mc <- getStereotype2ExtendedMetaclasses(ss, umlR)
       ext = OTIMOFProfileResourceExtent(
-        resource = OTIMOFProfile(common.ProfileIRI(OTI_URI.unwrap(d.info.packageURI))),
+        resource = OTIMOFProfile(d.toOTIMOFResourceIRI),
+        exendedMetamodels = Vector(profile.Profile2ExtendedMetamodel(
+          extendedMetamodel = umlR.resource.iri,
+          extendingProfile = d.toOTIMOFResourceIRI)),
+        importedProfiles = pf.packageImport.toVector.flatMap { pi =>
+          pi.importedPackage match {
+            case Some(ipf: UMLProfile[MagicDrawUML]) =>
+              ipf.URI match {
+                case Some(ipfURI) =>
+                  Some(OTIMOFResourceProfileImport(
+                    importingProfile = d.toOTIMOFResourceIRI,
+                    importedProfile = common.ResourceIRI(ipfURI)))
+                case _ =>
+                  throw new java.lang.IllegalArgumentException(s"Profile ${pf.qualifiedName.get} imports a profile without a URI: ${ipf.qualifiedName.get}")
+              }
+            case _ =>
+              None
+          }
+        },
         classifiers = ss.map { s =>
           profile.Stereotype(
-            uuid = common.StereotypeUUID(TOOL_SPECIFIC_UUID.unwrap(s.toolSpecific_uuid.get)),
+            uuid = s.toOTIMOFEntityUUID,
             name = common.Name(s.name.get))
         },
-        extendedMetaclass = s2mc)
+        associationTargetEnds = sms.map { case (_, p, _) =>
+          if (p.isComposite)
+            features.AssociationTargetCompositeEnd(
+              uuid = p.toOTIMOFEntityUUID,
+              name = common.Name(p.name.get))
+          else
+            features.AssociationTargetReferenceEnd(
+              uuid = p.toOTIMOFEntityUUID,
+              name = common.Name(p.name.get))
+        } ++ sss.map { case (_, p, _) =>
+          if (p.isComposite)
+            features.AssociationTargetCompositeEnd(
+              uuid = p.toOTIMOFEntityUUID,
+              name = common.Name(p.name.get))
+          else
+            features.AssociationTargetReferenceEnd(
+              uuid = p.toOTIMOFEntityUUID,
+              name = common.Name(p.name.get))
+        },
+        generalizations = ss.flatMap { s =>
+          s.general_classifier.flatMap {
+            case sp: UMLStereotype[MagicDrawUML] =>
+              Some(profile.StereotypeGeneralization(
+                general = s.toOTIMOFEntityUUID,
+                specific = sp.toOTIMOFEntityUUID))
+            case _ =>
+              None
+          }
+        },
+        attributes = sas.map { case (_, f, _, _) =>
+            if (f.isOrdered)
+              features.DataTypedAttributeOrderedProperty(
+                uuid = f.toOTIMOFEntityUUID,
+                name = common.Name(f.name.get))
+            else
+              features.DataTypedAttributeUnorderedProperty(
+                uuid = f.toOTIMOFEntityUUID,
+                name = common.Name(f.name.get))
+        },
+        featureLowerBounds = sas.map { case (_, f, _, _) =>
+          features.FeatureLowerBound(
+              feature = f.toOTIMOFEntityUUID,
+              lower = common.NonNegativeInt(f.lower.intValue()))
+        } ++ (sms ++ sss).map { case (_, f, _) =>
+          features.FeatureLowerBound(
+            feature = f.toOTIMOFEntityUUID,
+            lower = common.NonNegativeInt(f.lower.intValue()))
+        },
+        featureUpperBounds = sas.map { case (_, f, _, _) =>
+          features.FeatureUpperBound(
+            feature = f.toOTIMOFEntityUUID,
+            upper = common.UnlimitedNatural(f.upper.intValue()))
+        } ++ (sms ++ sss).map { case (_, f, _) =>
+          features.FeatureUpperBound(
+            feature = f.toOTIMOFEntityUUID,
+            upper = common.UnlimitedNatural(f.upper.intValue()))
+        },
+        featureOrdering = sas.map { case (_, f, _, _) =>
+          features.FeatureOrdering(
+            feature = f.toOTIMOFEntityUUID,
+            isOrdered = f.isOrdered)
+        } ++ (sms ++ sss).map { case (_, f, _) =>
+          features.FeatureOrdering(
+            feature = f.toOTIMOFEntityUUID,
+            isOrdered = f.isOrdered)
+        },
+        extendedMetaclass = s2mc,
+        stereotype2attribute = sas.map { case (s, f, _, i) =>
+            profile.Stereotype2Attribute(
+              stereotype = s.toOTIMOFEntityUUID,
+              attribute = f.toOTIMOFEntityUUID,
+              index = i)
+        },
+        attribute2type = sas.map { case (_, f, dtUUID, _) =>
+          features.AttributeProperty2DataType(
+            attribute = f.toOTIMOFEntityUUID,
+            `type` = dtUUID)
+        },
+        stereotype2associationEndMetaClassProperty = sms.map { case (s, f, mcUUID) =>
+            profile.StereotypeAssociationTargetEndMetaClassProperty(
+              sourceStereotype = s.toOTIMOFEntityUUID,
+              associationTargetEnd = f.toOTIMOFEntityUUID,
+              targetMetaClass = mcUUID)
+        },
+        stereotype2associationEndStereotypeProperty = sss.map { case (s, f, st) =>
+          profile.StereotypeAssociationTargetEndStereotypeProperty(
+            sourceStereotype = s.toOTIMOFEntityUUID,
+            associationTargetEnd = f.toOTIMOFEntityUUID,
+            targetStereotype = st.toOTIMOFEntityUUID)
+        })
     } yield {
       guiLog.log(s"Extent: ${d.info.packageURI}")
       ext
@@ -229,7 +409,7 @@ object ExportAsOTIMOFProfiles {
         case Some(umlMC) =>
           \&/.That(Vector(
             profile.Stereotype2ExtendedMetaclass(
-              extendingStereotype = common.StereotypeUUID(TOOL_SPECIFIC_UUID.unwrap(s.toolSpecific_uuid.get)),
+              extendingStereotype = s.toOTIMOFEntityUUID,
               extendedMetaclass = umlMC.uuid)))
       }
   }

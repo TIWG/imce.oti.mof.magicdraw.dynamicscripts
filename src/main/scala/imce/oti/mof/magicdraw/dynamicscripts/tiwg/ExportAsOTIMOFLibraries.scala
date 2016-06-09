@@ -52,7 +52,6 @@ import gov.nasa.jpl.dynamicScripts.magicdraw.utils.MDUML
 import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataResults
 import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.utils.OTIHelper
 import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.validation.OTIMagicDrawValidation
-import org.omg.oti.json.common.OTIPrimitiveTypes._
 import org.omg.oti.json.common.OTIDocumentSetConfiguration
 import org.omg.oti.json.uml.serialization.OTIJsonSerializationHelper
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper.{MagicDrawOTIDocumentSetAdapterForDataProvider, MagicDrawOTIHelper}
@@ -143,7 +142,7 @@ object ExportAsOTIMOFLibraries {
       val app = Application.getInstance()
       val guiLog = app.getGUILog
 
-      val lib = OTIMOFLibrary(common.LibraryIRI(OTI_URI.unwrap(d.info.packageURI)))
+      val lib = OTIMOFLibrary(d.toOTIMOFResourceIRI)
 
       val extent = OTIMOFLibraryResourceExtent(
         resource=lib,
@@ -173,7 +172,7 @@ object ExportAsOTIMOFLibraries {
   = e match {
     case pt: UMLPrimitiveType[MagicDrawUML] =>
       library.PrimitiveDataType(
-        uuid = common.LibraryPrimitiveTypeUUID(TOOL_SPECIFIC_UUID.unwrap(pt.toolSpecific_uuid.get)),
+        uuid = pt.toOTIMOFEntityUUID,
         name = common.Name(pt.name.get),
         datatypeMapDefinition = primitiveTypeMap(pt.name.get)
       ).some
