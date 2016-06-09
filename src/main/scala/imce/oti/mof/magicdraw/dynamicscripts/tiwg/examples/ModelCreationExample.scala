@@ -105,10 +105,13 @@ object ModelCreationExample {
             Success(resultsDir.toPath)
       }
       templateUri = root.toPath.resolve("templates/SysML/SysML.mdzip").toUri
+      _ = System.out.println(s"=> Path for MD template: $templateUri")
       exampleLoadFile <-
       createParentRelativePathsForFilename(resultsPath, "samples/SysML/created", "ModelCreationExample.mdzip")
+      _ = System.out.println(s"=> Path for created MD example: $exampleLoadFile")
       exampleSaveFile <-
       createParentRelativePathsForFilename(resultsPath, "samples/SysML/updated", "ModelCreationExample.mdzip")
+      _ = System.out.println(s"=> Path for updated MD example: $exampleSaveFile")
 
       load = ProjectDescriptorsFactory.createProjectDescriptor(templateUri)
       silent = true
@@ -119,6 +122,7 @@ object ModelCreationExample {
           val project = a.getProject
           val d = ProjectDescriptorsFactory.createLocalProjectDescriptor(project, exampleLoadFile)
           pm.saveProject(d, silent)
+          System.out.println(s"=> Saved created MD example: $exampleLoadFile")
           project
         })
         .fold[Try[Option[MagicDrawValidationDataResults]]](
@@ -137,7 +141,9 @@ object ModelCreationExample {
                 .either({
                   // try to save the updated project
                   val d = ProjectDescriptorsFactory.createLocalProjectDescriptor(project, exampleSaveFile)
-                  pm.saveProject(d, silent)
+                  val saved = pm.saveProject(d, silent)
+                  System.out.println(s"=> Saved updated MD example: $exampleSaveFile")
+                  saved
                 })
                 .fold[Try[Option[MagicDrawValidationDataResults]]](
                 (error: java.lang.Throwable) => Failure(error),
