@@ -52,7 +52,7 @@ import gov.nasa.jpl.dynamicScripts.DynamicScriptsTypes
 import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataResults
 import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.ui.ProfileInspectorWidget
 
-import org.omg.oti.json.common.OTIDocumentSetConfiguration
+import org.omg.oti.json.common.{OTIDocumentSetConfiguration,OTIPrimitiveTypes}
 import org.omg.oti.json.uml.serialization.OTIJsonSerializationHelper
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper.MagicDrawOTIDocumentSetAdapterForDataProvider
 import org.omg.oti.magicdraw.uml.read.MagicDrawUML
@@ -124,7 +124,7 @@ object ExportAsOTIMOFProfiles {
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
     resourceExtents: Set[OTIMOFResourceExtent])
-  : Try[Document[MagicDrawUML] => \&/[Vector[java.lang.Throwable], OTIMOFProfileResourceExtent]]
+  : Try[(Document[MagicDrawUML], Set[Document[MagicDrawUML]])=> \&/[Vector[java.lang.Throwable], OTIMOFProfileResourceExtent]]
   = resourceExtents.find(Utils.PrimitiveTypes_IRI == _.resource.iri) match {
     case Some(primitiveTypesR: OTIMOFLibraryResourceExtent) =>
       resourceExtents.find(Utils.UML25_IRI == _.resource.iri) match {
@@ -142,11 +142,12 @@ object ExportAsOTIMOFProfiles {
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
     umlResolver: UMLMetamodelResolver )
-  ( d: Document[MagicDrawUML] )
+  ( d: Document[MagicDrawUML],
+    pfDocuments: Set[Document[MagicDrawUML]] )
   : Vector[java.lang.Throwable] \&/ OTIMOFProfileResourceExtent
   = d.scope match {
     case pf: UMLProfile[MagicDrawUML] =>
-      exportAsOTIMOFProfile(p, odsa, d, pf)(umlResolver)
+      exportAsOTIMOFProfile(p, odsa, d, pf, pfDocuments)(umlResolver)
     case pkg =>
       \&/.This(Vector(UMLError.illegalElementError[MagicDrawUML, UMLPackage[MagicDrawUML]](
         s"Cannot export package ${pkg.qualifiedName.get} as an OTIMOFProfile",
@@ -157,7 +158,8 @@ object ExportAsOTIMOFProfiles {
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
     d: Document[MagicDrawUML],
-    pf: UMLProfile[MagicDrawUML] )
+    pf: UMLProfile[MagicDrawUML],
+    pfDocuments: Set[Document[MagicDrawUML]] )
   (implicit umlResolver: UMLMetamodelResolver)
   : Vector[java.lang.Throwable] \&/ OTIMOFProfileResourceExtent
   = {
@@ -253,13 +255,16 @@ object ExportAsOTIMOFProfiles {
         importedProfiles = pf.packageImport.toVector.flatMap { pi =>
           pi.importedPackage match {
             case Some(ipf: UMLProfile[MagicDrawUML]) =>
-              ipf.URI match {
-                case Some(ipfURI) =>
+              pfDocuments.find(_.scope == ipf) match {
+                case Some(dipf) =>
                   Some(OTIMOFResourceProfileImport(
                     importingProfile = d.toOTIMOFResourceIRI,
-                    importedProfile = common.ResourceIRI(ipfURI)))
+                    importedProfile = common.ResourceIRI(OTIPrimitiveTypes.OTI_URI.unwrap(dipf.info.packageURI))))
                 case _ =>
-                  throw new java.lang.IllegalArgumentException(s"Profile ${pf.qualifiedName.get} imports a profile without a URI: ${ipf.qualifiedName.get}")
+                  java.lang.System.out.println(
+                    s"Profile `${pf.qualifiedName.get}` imports "+
+                    s"a profile without a known OTI Document PackageURI: `${ipf.qualifiedName.get}`")
+                  None
               }
             case _ =>
               None

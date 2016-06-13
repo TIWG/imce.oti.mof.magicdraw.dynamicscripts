@@ -127,7 +127,7 @@ object ExportAsOTIMOFMetamodels {
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
     resourceExtents: Set[OTIMOFResourceExtent])
-  : Try[Document[MagicDrawUML] => \&/[Vector[java.lang.Throwable], OTIMOFResourceExtent]]
+  : Try[(Document[MagicDrawUML], Set[Document[MagicDrawUML]])=> \&/[Vector[java.lang.Throwable], OTIMOFResourceExtent]]
   = resourceExtents.find(Utils.PrimitiveTypes_IRI == _.resource.iri) match {
     case Some(r: OTIMOFLibraryResourceExtent) =>
       Success(exportAsOTIMOFMetamodel(p, odsa, r) _)
@@ -139,7 +139,8 @@ object ExportAsOTIMOFMetamodels {
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
     primitiveTypes: OTIMOFLibraryResourceExtent)
-  ( d: Document[MagicDrawUML] )
+  ( d: Document[MagicDrawUML],
+    pfDocuments: Set[Document[MagicDrawUML]] )
   : Vector[java.lang.Throwable] \&/ OTIMOFResourceExtent
   = {
     implicit val ops = odsa.otiAdapter.umlOps

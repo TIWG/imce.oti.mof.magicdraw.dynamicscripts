@@ -123,7 +123,9 @@ object ExportAsOTIMOFModels {
     selectedSpecificationRootPackages: Set[UMLPackage[MagicDrawUML]] )
   : Try[Option[MagicDrawValidationDataResults]]
   = for {
-    cbpf <- ExportAsOTIMOFProfiles.exportAsOTIMOFProfile(p, odsa, resourceExtents)
+    cbpf <- ExportAsOTIMOFProfiles.exportAsOTIMOFProfile(
+      p, odsa,
+      resourceExtents)
     cbm <- exportAsOTIMOFModel(p, odsa, resourceExtents)
     er <- Utils.exportAsOTIMOFProfiledResources(
       p, odsa, config,
@@ -137,7 +139,7 @@ object ExportAsOTIMOFModels {
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
     resourceExtents: Set[OTIMOFResourceExtent])
-  : Try[(Vector[(Document[MagicDrawUML], OTIMOFProfileResourceExtent)], Document[MagicDrawUML]) => \&/[Vector[java.lang.Throwable], OTIMOFModelResourceExtent]]
+  : Try[(Vector[(Document[MagicDrawUML], OTIMOFProfileResourceExtent)], Document[MagicDrawUML], Set[Document[MagicDrawUML]]) => \&/[Vector[java.lang.Throwable], OTIMOFModelResourceExtent]]
   = resourceExtents.find(Utils.PrimitiveTypes_IRI == _.resource.iri) match {
     case Some(primitiveTypesR: OTIMOFLibraryResourceExtent) =>
       resourceExtents.find(Utils.UML25_IRI == _.resource.iri) match {
@@ -271,7 +273,8 @@ object ExportAsOTIMOFModels {
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider )
   ( pfExtents: Vector[(Document[MagicDrawUML], OTIMOFProfileResourceExtent)],
-    d: Document[MagicDrawUML] )
+    d: Document[MagicDrawUML],
+    pkgDocuments: Set[Document[MagicDrawUML]] )
   ( implicit umlResolver: UMLMetamodelResolver )
   : Vector[java.lang.Throwable] \&/ OTIMOFModelResourceExtent
   = for {

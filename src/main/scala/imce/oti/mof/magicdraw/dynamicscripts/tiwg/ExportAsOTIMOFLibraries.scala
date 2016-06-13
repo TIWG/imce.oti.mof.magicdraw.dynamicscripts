@@ -122,7 +122,7 @@ object ExportAsOTIMOFLibraries {
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
     resourceExtents: Set[OTIMOFResourceExtent])
-  : Try[Document[MagicDrawUML] => \&/[Vector[java.lang.Throwable], OTIMOFResourceExtent]]
+  : Try[(Document[MagicDrawUML], Set[Document[MagicDrawUML]]) => \&/[Vector[java.lang.Throwable], OTIMOFResourceExtent]]
   = {
     val jHelper = OTIJsonSerializationHelper(odsa)
     implicit val ops = odsa.otiAdapter.umlOps
@@ -130,7 +130,7 @@ object ExportAsOTIMOFLibraries {
     val app = Application.getInstance()
     val guiLog = app.getGUILog
 
-    Success((d: Document[MagicDrawUML]) => {
+    Success((d: Document[MagicDrawUML], _: Set[Document[MagicDrawUML]]) => {
 
       val pExtent = d.extent match {
         case ex: Set[UMLElement[MagicDrawUML]] =>

@@ -531,7 +531,7 @@ object Utils {
    config: OTIDocumentSetConfiguration,
    selectedSpecificationRootPackages: Set[UMLPackage[MagicDrawUML]],
    resourceExtents: Set[OTIMOFResourceExtent],
-   toDocumentExtent: Document[MagicDrawUML] => \&/[Vector[java.lang.Throwable], OTIMOFResourceExtent],
+   toDocumentExtent: (Document[MagicDrawUML], Set[Document[MagicDrawUML]]) => \&/[Vector[java.lang.Throwable], OTIMOFResourceExtent],
    actionName: String)
   : Try[Option[MagicDrawValidationDataResults]]
   = {
@@ -563,6 +563,15 @@ object Utils {
 
     val errors = new scala.collection.mutable.ListBuffer[java.lang.Throwable]()
 
+    val pfDocuments = odsa.ds.allDocuments.flatMap { d =>
+      d.scope match {
+        case _: UMLProfile[MagicDrawUML] =>
+          Some(d)
+        case _ =>
+          None
+      }
+    }
+
     odsa.ds.allDocuments.foreach { d =>
 
       val pkg = d.scope
@@ -571,7 +580,7 @@ object Utils {
         size = size + d.extent.size
         val e0: Long = java.lang.System.currentTimeMillis()
 
-        val dN = toDocumentExtent(d)
+        val dN = toDocumentExtent(d, pfDocuments)
 
         val e1: Long = java.lang.System.currentTimeMillis()
         System.out.println(
@@ -634,8 +643,8 @@ object Utils {
    config: OTIDocumentSetConfiguration,
    selectedSpecificationRootPackages: Set[UMLPackage[MagicDrawUML]],
    resourceExtents: Set[OTIMOFResourceExtent],
-   toDocumentProfileExtent: Document[MagicDrawUML] => \&/[Vector[java.lang.Throwable], OTIMOFProfileResourceExtent],
-   toDocumentModelExtent: (Vector[(Document[MagicDrawUML], OTIMOFProfileResourceExtent)], Document[MagicDrawUML]) => \&/[Vector[java.lang.Throwable], OTIMOFModelResourceExtent],
+   toDocumentProfileExtent: (Document[MagicDrawUML], Set[Document[MagicDrawUML]]) => \&/[Vector[java.lang.Throwable], OTIMOFProfileResourceExtent],
+   toDocumentModelExtent: (Vector[(Document[MagicDrawUML], OTIMOFProfileResourceExtent)], Document[MagicDrawUML], Set[Document[MagicDrawUML]]) => \&/[Vector[java.lang.Throwable], OTIMOFModelResourceExtent],
    actionName: String)
   : Try[Option[MagicDrawValidationDataResults]]
   = {
@@ -672,8 +681,17 @@ object Utils {
         None
     }
 
+    val pfDocuments = odsa.ds.allDocuments.flatMap { d =>
+      d.scope match {
+        case _: UMLProfile[MagicDrawUML] =>
+          Some(d)
+        case _ =>
+          None
+      }
+    }
+
     val pfResourcesOrErrors =
-      odsa.ds.allDocuments
+      pfDocuments
         .foldLeft[Vector[java.lang.Throwable] \&/ Vector[(Document[MagicDrawUML], OTIMOFProfileResourceExtent)]](
         \&/.That(Vector.empty[(Document[MagicDrawUML], OTIMOFProfileResourceExtent)])
       ) { case (acc, d) =>
@@ -683,7 +701,7 @@ object Utils {
             size = size + d.extent.size
             val e0: Long = java.lang.System.currentTimeMillis()
 
-            val inc = toDocumentProfileExtent(d).map(r => Vector((d, r)))
+            val inc = toDocumentProfileExtent(d, pfDocuments).map(r => Vector((d, r)))
 
             acc append inc
 
@@ -701,6 +719,15 @@ object Utils {
         Some(pkg)
     }
 
+    val pkgDocuments = odsa.ds.allDocuments.flatMap { d =>
+      d.scope match {
+        case _: UMLProfile[MagicDrawUML] =>
+          None
+        case _ =>
+          Some(d)
+      }
+    }
+
     val pkgResourcesOrErrors =
       odsa.ds.allDocuments
         .foldLeft[Vector[java.lang.Throwable] \&/ Vector[(Document[MagicDrawUML], OTIMOFModelResourceExtent)]](
@@ -714,7 +741,7 @@ object Utils {
             size = size + d.extent.size
             val e0: Long = java.lang.System.currentTimeMillis()
 
-            val inc = toDocumentModelExtent(pfResources, d).map(r => Vector((d, r)))
+            val inc = toDocumentModelExtent(pfResources, d, pkgDocuments).map(r => Vector((d, r)))
 
             acc append inc
 

@@ -134,7 +134,7 @@ object ModelCreationExample {
               project, ev, script,
               "ModelCreationExample",
               exampleCallback,
-              Utils.chooseOTIDocumentSetConfigurationAndPrimitiveTypesAndUMLMetamodelAndStandardProfile,
+              Utils.chooseOTIDocumentSetConfigurationAndPrimitiveTypesAndUMLMetamodel,
               Option.empty[File])
             .flatMap { result =>
               catching(nonFatalCatcher)
