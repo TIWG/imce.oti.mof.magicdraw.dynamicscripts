@@ -123,11 +123,12 @@ object ExportAsOTIMOFModels {
     selectedSpecificationRootPackages: Set[UMLPackage[MagicDrawUML]] )
   : Try[Option[MagicDrawValidationDataResults]]
   = for {
-    cb <- exportAsOTIMOFModel(p, odsa, resourceExtents)
-    er <- Utils.exportAsOTIMOFResource(
+    cbpf <- ExportAsOTIMOFProfiles.exportAsOTIMOFProfile(p, odsa, resourceExtents)
+    cbm <- exportAsOTIMOFModel(p, odsa, resourceExtents)
+    er <- Utils.exportAsOTIMOFProfiledResources(
       p, odsa, config,
       selectedSpecificationRootPackages,
-      resourceExtents, cb, "exportAsOTIMOFLibrary")
+      resourceExtents, cbpf, cbm, "exportAsOTIMOFModel")
   } yield er
 
   // need something to only go over non-profile document packages!
@@ -136,7 +137,7 @@ object ExportAsOTIMOFModels {
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
     resourceExtents: Set[OTIMOFResourceExtent])
-  : Try[Document[MagicDrawUML] => \&/[Vector[java.lang.Throwable], OTIMOFResourceExtent]]
+  : Try[(Vector[(Document[MagicDrawUML], OTIMOFProfileResourceExtent)], Document[MagicDrawUML]) => \&/[Vector[java.lang.Throwable], OTIMOFModelResourceExtent]]
   = resourceExtents.find(Utils.PrimitiveTypes_IRI == _.resource.iri) match {
     case Some(primitiveTypesR: OTIMOFLibraryResourceExtent) =>
       resourceExtents.find(Utils.UML25_IRI == _.resource.iri) match {
@@ -144,9 +145,7 @@ object ExportAsOTIMOFModels {
           import Utils.selectable
           implicit val umlResolver = UMLMetamodelResolver.initialize(primitiveTypesR, umlR)
           Success(
-            exportAsOTIMOFModel(
-              p, odsa,
-              resourceExtents.select { case pfExt: OTIMOFProfileResourceExtent => pfExt }))
+            exportAsOTIMOFModel(p, odsa))
         case _ =>
           Failure(new java.lang.IllegalArgumentException("No MD18 UML2.5 metamodel resource found!"))
       }
@@ -173,7 +172,7 @@ object ExportAsOTIMOFModels {
   def onlyAppliedStereotypesByProfile
   (modelIRI: common.ResourceIRI,
    allAppliedStereotypesByOptionalProfile: AppliedStereotypesByOptionalProfile,
-   profiles: Set[OTIMOFProfileResourceExtent])
+   profiles: Vector[OTIMOFProfileResourceExtent])
   : Vector[java.lang.Throwable] \&/ AppliedStereotypesByProfile
   = allAppliedStereotypesByOptionalProfile
     .aggregate[\&/[Vector[java.lang.Throwable], AppliedStereotypesByProfile]](\&/.That(Vector()))(
@@ -210,7 +209,7 @@ object ExportAsOTIMOFModels {
   def lookupProfile
   (applyingModel: common.ResourceIRI,
    pf: UMLProfile[MagicDrawUML],
-   profiles: Set[OTIMOFProfileResourceExtent])
+   profiles: Vector[OTIMOFProfileResourceExtent])
   : Vector[java.lang.Throwable] \&/ OTIMOFProfileResourceExtent
   = pf.URI match {
     case None =>
@@ -239,8 +238,8 @@ object ExportAsOTIMOFModels {
       case (acc, ((s, _), es)) =>
         val sUUID = s.toOTIMOFEntityUUID
 
-        val ps = pfR.classifiers.find { c =>
-          val ok = sUUID == c.uuid
+        val ps = pfR.classifiers.find { cs =>
+          val ok = sUUID.value == cs.uuid.value
           if (ok)
             true
           else
@@ -252,7 +251,7 @@ object ExportAsOTIMOFModels {
         = ps match {
           case None =>
             \&/.This(Vector(UMLError.illegalElementError[MagicDrawUML, UMLStereotype[MagicDrawUML]](
-              s"Unknown stereotype '${s.qualifiedName.get}' applied to ${es.size} elements",
+              s"*** Unknown stereotype '${s.qualifiedName.get}' applied to ${es.size} elements",
               Iterable(s)
             )))
           case Some(otiS) =>
@@ -270,11 +269,11 @@ object ExportAsOTIMOFModels {
 
   def exportAsOTIMOFModel
   ( p: Project,
-    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
-    profiles: Set[OTIMOFProfileResourceExtent] )
-  ( d: Document[MagicDrawUML] )
+    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider )
+  ( pfExtents: Vector[(Document[MagicDrawUML], OTIMOFProfileResourceExtent)],
+    d: Document[MagicDrawUML] )
   ( implicit umlResolver: UMLMetamodelResolver )
-  : Vector[java.lang.Throwable] \&/ OTIMOFResourceExtent
+  : Vector[java.lang.Throwable] \&/ OTIMOFModelResourceExtent
   = for {
     allAppliedStereotypesByOptionalProfile <- d.scope.allAppliedStereotypesByProfile match {
       case -\/(errors) =>
@@ -284,6 +283,8 @@ object ExportAsOTIMOFModels {
     }
 
     modelIRI = d.toOTIMOFResourceIRI
+
+    profiles = pfExtents.map(_._2)
 
     allAppliedStereotypesByProfile <-
     onlyAppliedStereotypesByProfile(modelIRI, allAppliedStereotypesByOptionalProfile, profiles)
@@ -300,7 +301,7 @@ object ExportAsOTIMOFModels {
       _ append _)
 
     result <- exportAsOTIMOFModelExtent(
-      p, odsa, profiles,
+      p, odsa, pfExtents,
       d, modelIRI, appliedStereotypes, allAppliedStereotypesByProfile)(umlResolver)
 
   } yield result
@@ -308,13 +309,13 @@ object ExportAsOTIMOFModels {
   def exportAsOTIMOFModelExtent
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
-    profiles: Set[OTIMOFProfileResourceExtent],
+    pfExtents: Vector[(Document[MagicDrawUML], OTIMOFProfileResourceExtent)],
     d: Document[MagicDrawUML],
     modelIRI: common.ResourceIRI,
     appliedStereotypes: Vector[model.AppliedStereotype],
     allAppliedStereotypesByProfile: AppliedStereotypesByProfile)
   (implicit umlResolver: UMLMetamodelResolver)
-  : Vector[java.lang.Throwable] \&/ OTIMOFResourceExtent
+  : Vector[java.lang.Throwable] \&/ OTIMOFModelResourceExtent
   = {
     implicit val ops = odsa.otiAdapter.umlOps
 

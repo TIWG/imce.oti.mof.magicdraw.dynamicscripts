@@ -36,7 +36,7 @@
       "artifactKind" : {
         "type" : "OTISerializableModelLibraryArtifactKind"
       },
-      "nsPrefix" : "ModelingDomain",
+      "nsPrefix" : "AutomotiveValueTypes",
       "uuidPrefix" : "org.omg.sysml.HybridSUV.AutomotiveValueTypes"
     },
     "toolSpecificPackageID" : "_16_0beta1_1b500480_1221552131488_238103_4240",

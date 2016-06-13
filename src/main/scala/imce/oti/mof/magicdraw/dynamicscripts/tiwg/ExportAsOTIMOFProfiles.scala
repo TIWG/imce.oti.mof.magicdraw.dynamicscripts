@@ -124,7 +124,7 @@ object ExportAsOTIMOFProfiles {
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
     resourceExtents: Set[OTIMOFResourceExtent])
-  : Try[Document[MagicDrawUML] => \&/[Vector[java.lang.Throwable], OTIMOFResourceExtent]]
+  : Try[Document[MagicDrawUML] => \&/[Vector[java.lang.Throwable], OTIMOFProfileResourceExtent]]
   = resourceExtents.find(Utils.PrimitiveTypes_IRI == _.resource.iri) match {
     case Some(primitiveTypesR: OTIMOFLibraryResourceExtent) =>
       resourceExtents.find(Utils.UML25_IRI == _.resource.iri) match {
@@ -143,7 +143,7 @@ object ExportAsOTIMOFProfiles {
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
     umlResolver: UMLMetamodelResolver )
   ( d: Document[MagicDrawUML] )
-  : Vector[java.lang.Throwable] \&/ OTIMOFResourceExtent
+  : Vector[java.lang.Throwable] \&/ OTIMOFProfileResourceExtent
   = d.scope match {
     case pf: UMLProfile[MagicDrawUML] =>
       exportAsOTIMOFProfile(p, odsa, d, pf)(umlResolver)
@@ -159,7 +159,7 @@ object ExportAsOTIMOFProfiles {
     d: Document[MagicDrawUML],
     pf: UMLProfile[MagicDrawUML] )
   (implicit umlResolver: UMLMetamodelResolver)
-  : Vector[java.lang.Throwable] \&/ OTIMOFResourceExtent
+  : Vector[java.lang.Throwable] \&/ OTIMOFProfileResourceExtent
   = {
     val app = Application.getInstance()
     val guiLog = app.getGUILog
