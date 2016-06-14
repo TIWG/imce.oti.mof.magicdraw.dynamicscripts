@@ -341,7 +341,9 @@ object Utils {
               val t0: Long = java.lang.System.currentTimeMillis()
 
               val result = for {
-                odsa <- MagicDrawOTIHelper.getOTIMagicDrawDataDocumentSetAdapter(oa, selectedSpecificationRootPackages)
+                odsa <- MagicDrawOTIHelper.getOTIMagicDrawDataDocumentSetAdapter(
+                  oa, selectedSpecificationRootPackages, MagicDrawOTIHelper.defaultExtentOfPkg)
+
                 t1 = java.lang.System.currentTimeMillis()
                 _ = {
                   System.out.println(
@@ -452,7 +454,9 @@ object Utils {
               val t0: Long = java.lang.System.currentTimeMillis()
 
               val result = for {
-                odsa <- MagicDrawOTIHelper.getOTIMagicDrawDataDocumentSetAdapter(oa, selectedSpecificationRootPackages)
+                odsa <- MagicDrawOTIHelper.getOTIMagicDrawDataDocumentSetAdapter(
+                  oa, selectedSpecificationRootPackages, MagicDrawOTIHelper.defaultExtentOfPkg)
+
                 t1 = java.lang.System.currentTimeMillis()
                 _ = {
                   System.out.println(

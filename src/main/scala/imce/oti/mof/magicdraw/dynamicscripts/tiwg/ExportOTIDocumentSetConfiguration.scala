@@ -101,7 +101,7 @@ object ExportOTIDocumentSetConfiguration {
 
       val otiV = OTIMagicDrawValidation(p)
 
-      doit2(p, otiV, oa, selectedSpecificationRootPackages)
+      doit2(p, otiV, oa, selectedSpecificationRootPackages, MagicDrawOTIHelper.defaultExtentOfPkg)
     })
 
   def doit
@@ -130,7 +130,7 @@ object ExportOTIDocumentSetConfiguration {
       
       val otiV = OTIMagicDrawValidation(p)
 
-      doit2(p, otiV, oa, selectedSpecificationRootPackages)
+      doit2(p, otiV, oa, selectedSpecificationRootPackages, MagicDrawOTIHelper.defaultExtentOfPkg)
     })
 
   def doit
@@ -175,14 +175,15 @@ object ExportOTIDocumentSetConfiguration {
 
       val otiV = OTIMagicDrawValidation(p)
 
-      doit2(p, otiV, oa, selectedSpecificationRootPackages)
+      doit2(p, otiV, oa, selectedSpecificationRootPackages, MagicDrawOTIHelper.defaultExtentOfPkg)
     })
 
   def doit2
   (p: Project,
    otiV: OTIMagicDrawValidation,
    oa: MagicDrawOTIProfileAdapter,
-   selectedSpecificationRootPackages: Set[UMLPackage[MagicDrawUML]])
+   selectedSpecificationRootPackages: Set[UMLPackage[MagicDrawUML]],
+   extentOfPkg: UMLPackage[MagicDrawUML] => Set[UMLElement[MagicDrawUML]])
   : Try[Option[MagicDrawValidationDataResults]]
   = {
 
@@ -204,7 +205,8 @@ object ExportOTIDocumentSetConfiguration {
     val t0: Long = java.lang.System.currentTimeMillis()
 
     val result = for {
-      odsa <- MagicDrawOTIHelper.getOTIMagicDrawProfileDocumentSetAdapter(oa, selectedSpecificationRootPackages)
+      odsa <- MagicDrawOTIHelper.getOTIMagicDrawProfileDocumentSetAdapter(
+        oa, selectedSpecificationRootPackages, extentOfPkg)
       t1 = java.lang.System.currentTimeMillis()
       _ = {
         System.out.println(
