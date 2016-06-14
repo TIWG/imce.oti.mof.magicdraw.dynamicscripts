@@ -361,7 +361,9 @@ object ExportAsOTIMOFModels {
 
     val instantiatedMetamodels
     : Vector[OTIMOFResourceInstantiatedMetamodel]
-    = Vector()
+    = Vector(OTIMOFResourceInstantiatedMetamodel(
+      instantiatedMetamodel = umlResolver.umlR.resource.iri,
+      instantiatingModel = modelIRI))
 
     val app = Application.getInstance()
     val guiLog = app.getGUILog
