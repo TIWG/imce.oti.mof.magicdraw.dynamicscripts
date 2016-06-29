@@ -66,7 +66,7 @@ import org.omg.oti.uml.xmi.Document
 
 import scala.collection.immutable._
 import scala.io.{Codec, Source}
-import scala.{Boolean, Int, Long, None, Option, Some, StringContext, Unit}
+import scala.{Boolean, Int, Long, None, Option, Some, StringContext, Tuple3, Unit}
 import scala.Predef.{augmentString, refArrayOps, require, ArrowAssoc}
 import scala.util.{Failure, Success, Try}
 import scalaz._
@@ -135,6 +135,11 @@ object ExportAsOTIMOFMetamodels {
       Failure(new java.lang.IllegalArgumentException("No MD18 PrimitiveTypes library resource found!"))
   }
 
+  case class UMLAssociationInfo
+  ( a: UMLAssociation[MagicDrawUML],
+    source: UMLProperty[MagicDrawUML],
+    target: UMLProperty[MagicDrawUML] )
+
   def exportAsOTIMOFMetamodel
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
@@ -156,13 +161,26 @@ object ExportAsOTIMOFMetamodels {
       .sortBy(_.name.get)
 
     val mas
-    : Vector[UMLAssociation[MagicDrawUML]]
+    : Vector[UMLAssociationInfo]
     = d
       .scope
       .allOwnedElements
       .select { case mc: UMLAssociation[MagicDrawUML] => mc }
       .to[Vector]
       .sortBy(_.name.get)
+      .map { ma =>
+        val ends = ma.getDirectedAssociationEnd
+        require(ends.isDefined, ma.qualifiedName.get)
+        val (target, source) = ends.get
+        val targetName = target.name.get
+        if (targetName.startsWith("_") || targetName.startsWith("UML")) {
+          System.out.println(s"Assoc (rev) ${ma.name.get}\n ${source._type.get.name.get}::${target.name.get} -> ${source.name.get}::${target._type.get.name.get}")
+          UMLAssociationInfo(ma, target, source)
+        } else {
+          System.out.println(s"Assoc (fwd) ${ma.name.get}\n ${target._type.get.name.get}::${source.name.get} -> ${target.name.get}::${source._type.get.name.get}")
+          UMLAssociationInfo(ma, source, target)
+        }
+      }
 
     val app = Application.getInstance()
     val guiLog = app.getGUILog
@@ -200,15 +218,12 @@ object ExportAsOTIMOFMetamodels {
             uuid = mc.toOTIMOFEntityUUID,
             name = common.Name(mc.name.get))
         } ++
-          mas.map { ma =>
+          mas.map { case UMLAssociationInfo(ma, source, target) =>
             metamodel.MetaAssociation(
               uuid = ma.toOTIMOFEntityUUID,
               name = common.Name(ma.name.get))
           },
-      associationEnds = mas.flatMap { ma =>
-        val ends = ma.getDirectedAssociationEnd
-        require(ends.isDefined, ma.qualifiedName.get)
-        val (source, target) = ends.get
+      associationEnds = mas.flatMap { case UMLAssociationInfo(ma, source, target) =>
 
         Vector(
           features.AssociationSourceEnd(
@@ -224,28 +239,19 @@ object ExportAsOTIMOFMetamodels {
               name = common.Name(target.name.get))
         )
       },
-      association2source = mas.map { ma =>
-        val ends = ma.getDirectedAssociationEnd
-        require(ends.isDefined, ma.qualifiedName.get)
-        val (source, _) = ends.get
+      association2source = mas.map { case UMLAssociationInfo(ma, source, target) =>
         metamodel.MetaAssociation2SourceEndProperty(
           association = ma.toOTIMOFEntityUUID,
           sourceEnd = source.toOTIMOFEntityUUID
         )
       },
-      association2Target = mas.map { ma =>
-        val ends = ma.getDirectedAssociationEnd
-        require(ends.isDefined, ma.qualifiedName.get)
-        val (_, target) = ends.get
+      association2target = mas.map { case UMLAssociationInfo(ma, source, target) =>
         metamodel.MetaAssociation2TargetEndProperty(
           association = ma.toOTIMOFEntityUUID,
           targetEnd = target.toOTIMOFEntityUUID
         )
       },
-      associationEnd2Metaclass = mas.flatMap { ma =>
-        val ends = ma.getDirectedAssociationEnd
-        require(ends.isDefined, ma.qualifiedName.get)
-        val (source, target) = ends.get
+      associationEnd2Metaclass = mas.flatMap { case UMLAssociationInfo(ma, source, target) =>
         Vector(
           metamodel.MetaAssociationEndProperty2MetaClassType(
             associationEnd = source.toOTIMOFEntityUUID,
@@ -256,9 +262,9 @@ object ExportAsOTIMOFMetamodels {
         )
       },
       attributes = dataTypedAttributes.map { case (mcUUID, p, _) =>
-        features.DataTypedAttributeUnorderedProperty(
-          uuid = p.toOTIMOFEntityUUID,
-          name = common.Name(p.name.get))
+        features.DataTypedAttributeProperty(
+            uuid = p.toOTIMOFEntityUUID,
+            name = common.Name(p.name.get))
       },
       attribute2type = dataTypedAttributes.map { case (_, p, _) =>
           features.AttributeProperty2DataType(
@@ -272,18 +278,12 @@ object ExportAsOTIMOFMetamodels {
             attribute = p.toOTIMOFEntityUUID,
             index = i)
       },
-      featureLowerBounds = mas.map { ma =>
-        val ends = ma.getDirectedAssociationEnd
-        require(ends.isDefined, ma.qualifiedName.get)
-        val (source, _) = ends.get
+      featureLowerBounds = mas.map { case UMLAssociationInfo(ma, source, target) =>
         features.FeatureLowerBound(
           feature = source.toOTIMOFEntityUUID,
           lower = common.NonNegativeInt(source.lower.intValue())
         )
-      } ++ mas.map { ma =>
-        val ends = ma.getDirectedAssociationEnd
-        require(ends.isDefined, ma.qualifiedName.get)
-        val (_, target) = ends.get
+      } ++ mas.map { case UMLAssociationInfo(ma, source, target) =>
         features.FeatureLowerBound(
           feature = target.toOTIMOFEntityUUID,
           lower = common.NonNegativeInt(target.lower.intValue())
@@ -293,17 +293,11 @@ object ExportAsOTIMOFMetamodels {
           feature = p.toOTIMOFEntityUUID,
           lower = common.NonNegativeInt(p.lower.intValue()))
       },
-      featureUpperBounds = mas.map { ma =>
-        val ends = ma.getDirectedAssociationEnd
-        require(ends.isDefined, ma.qualifiedName.get)
-        val (source, _) = ends.get
+      featureUpperBounds = mas.map { case UMLAssociationInfo(ma, source, target) =>
         features.FeatureUpperBound(
           feature = source.toOTIMOFEntityUUID,
           upper = common.UnlimitedNatural(source.upper.intValue()))
-      } ++ mas.map { ma =>
-        val ends = ma.getDirectedAssociationEnd
-        require(ends.isDefined, ma.qualifiedName.get)
-        val (_, target) = ends.get
+      } ++ mas.map { case UMLAssociationInfo(ma, source, target) =>
         features.FeatureUpperBound(
           feature = target.toOTIMOFEntityUUID,
           upper = common.UnlimitedNatural(target.upper.intValue()))
@@ -312,17 +306,11 @@ object ExportAsOTIMOFMetamodels {
           feature = p.toOTIMOFEntityUUID,
           upper = common.UnlimitedNatural(p.upper.intValue()))
       },
-      featureOrdering = mas.map { ma =>
-        val ends = ma.getDirectedAssociationEnd
-        require(ends.isDefined, ma.qualifiedName.get)
-        val (source, _) = ends.get
+      featureOrdering = mas.map { case UMLAssociationInfo(ma, source, target) =>
         features.FeatureOrdering(
           feature = source.toOTIMOFEntityUUID,
           isOrdered = source.isOrdered)
-      } ++ mas.map { ma =>
-        val ends = ma.getDirectedAssociationEnd
-        require(ends.isDefined, ma.qualifiedName.get)
-        val (_, target) = ends.get
+      } ++ mas.map { case UMLAssociationInfo(ma, source, target) =>
         features.FeatureOrdering(
           feature = target.toOTIMOFEntityUUID,
           isOrdered = target.isOrdered)
@@ -334,14 +322,13 @@ object ExportAsOTIMOFMetamodels {
       generalizations = mcs.flatMap { mc =>
         val specific = mc.toOTIMOFEntityUUID
         mc.parents.flatMap {
-          case pc: UMLClass[MagicDrawUML] if mcs.contains(pc) =>
-            Some(metamodel.MetaClassifierGeneralization(
+          case pc: UMLClass[MagicDrawUML] if mcs.contains(pc) =>            Some(metamodel.MetaClassifierGeneralization(
               specific,
               general=pc.toOTIMOFEntityUUID))
           case _ =>
             None
         }
-      } ++ mas.flatMap { ma =>
+      } ++ mas.flatMap { case UMLAssociationInfo(ma, source, target) =>
         val specific = ma.toOTIMOFEntityUUID
         ma.parents.flatMap {
           case pa: UMLAssociation[MagicDrawUML] =>

@@ -55,6 +55,7 @@ import gov.nasa.jpl.dynamicScripts.magicdraw.utils.MDUML
 import gov.nasa.jpl.dynamicScripts.magicdraw.utils.MDUML._
 import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataResults
 import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.utils.OTIHelper
+import imce.oti.mof.resolvers.UMLMetamodelResolver
 import org.omg.oti.json.common.{OTIDocumentConfiguration, OTIDocumentSetConfiguration, OTIPrimitiveTypes}
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper._
 import org.omg.oti.magicdraw.uml.read.MagicDrawUML
@@ -887,6 +888,18 @@ object Utils {
       description = "*.metamodel.json",
       fileNameSuffix = ".metamodel.json"))
     .flatMap(loadOTIMOFResourceExtent[OTIMOFMetamodelResourceExtent])
+
+  def choosePrimitiveTypesAndUMLMetamodel4Resolver
+  ()
+  : Try[Option[UMLMetamodelResolver]]
+  = for {
+    pt <- choosePrimitiveTypes()
+    mm <- chooseUMLMetamodel()
+  } yield
+    for {
+      ptr <- pt
+      mmr <- mm
+    } yield UMLMetamodelResolver.initialize(ptr, mmr)
 
   def chooseOTIDocumentSetConfigurationAndPrimitiveTypesAndUMLMetamodel
   ()

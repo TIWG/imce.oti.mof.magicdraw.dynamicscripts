@@ -305,12 +305,7 @@ object ExportAsOTIMOFProfiles {
           }
         },
         attributes = sas.map { case (_, f, _, _) =>
-            if (f.isOrdered)
-              features.DataTypedAttributeOrderedProperty(
-                uuid = f.toOTIMOFEntityUUID,
-                name = common.Name(f.name.get))
-            else
-              features.DataTypedAttributeUnorderedProperty(
+            features.DataTypedAttributeProperty(
                 uuid = f.toOTIMOFEntityUUID,
                 name = common.Name(f.name.get))
         },

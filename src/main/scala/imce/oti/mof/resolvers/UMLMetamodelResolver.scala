@@ -55,6 +55,12 @@ case class UMLMetamodelResolver
  metaclasses
  : Vector[metamodel.MetaClass],
 
+ associations
+ : Vector[metamodel.MetaAssociation],
+
+ associationViews
+ : Vector[views.AssociationInfo],
+
  mc2DirectGeneralizations
  : Map[metamodel.MetaClass, Set[metamodel.MetaClass]],
 
@@ -65,7 +71,7 @@ case class UMLMetamodelResolver
  : Map[String, common.EntityUUID],
 
  mc2AllAttributes
- : Map[String, Set[features.DataTypedAttributeUnorderedProperty]])
+ : Map[String, Set[features.DataTypedAttributeProperty]])
 
 object UMLMetamodelResolver {
 
@@ -78,6 +84,55 @@ object UMLMetamodelResolver {
     val metaclasses
     : Vector[metamodel.MetaClass]
     = umlR.classifiers.select { case mc: metamodel.MetaClass => mc }
+
+    val associations
+    : Vector[metamodel.MetaAssociation]
+    = umlR.classifiers.select { case ma: metamodel.MetaAssociation => ma }
+
+    val associationViews
+    : Vector[views.AssociationInfo]
+    = for {
+      ma <- associations
+      maUUID = ma.uuid.value
+      ma2source <- umlR.association2source.find(_.association.value == maUUID)
+      sourceUUID = ma2source.sourceEnd.value
+      sourceEnd <- umlR.associationEnds.find(_.uuid.value == sourceUUID)
+      sourceFind = (f: features.FeatureInfo) => f.feature.value == sourceUUID
+      src2lower <- umlR.featureLowerBounds.find(sourceFind)
+      src2upper <- umlR.featureUpperBounds.find(sourceFind)
+      src2ord <- umlR.featureOrdering.find(sourceFind)
+      src2Type <- umlR.associationEnd2Metaclass.find(sourceUUID == _.associationEnd.value)
+      srcMetaclass <- metaclasses.find(src2Type.`type`.value == _.uuid.value)
+
+      srcInfo = views.AssociationEndInfo(
+        uuid = sourceEnd.uuid, name=sourceEnd.name,
+        lower=src2lower.lower, upper=src2upper.upper,
+        isOrdered=src2ord.isOrdered, metaclassType=srcMetaclass)
+
+      ma2target <- umlR.association2target.find(_.association.value == maUUID)
+      targetUUID = ma2target.targetEnd.value
+      targetEnd <- umlR.associationEnds.find(_.uuid.value == targetUUID)
+      targetFind = (f: features.FeatureInfo) => f.feature.value == targetUUID
+      trg2lower <- umlR.featureLowerBounds.find(targetFind)
+      trg2upper <- umlR.featureUpperBounds.find(targetFind)
+      trg2ord <- umlR.featureOrdering.find(targetFind)
+      trg2Type <- umlR.associationEnd2Metaclass.find(targetUUID == _.associationEnd.value)
+      trgMetaclass <- metaclasses.find(trg2Type.`type`.value == _.uuid.value)
+
+      trgInfo = views.AssociationEndInfo(
+        uuid = targetEnd.uuid, name=targetEnd.name,
+        lower=trg2lower.lower, upper=trg2upper.upper,
+        isOrdered=trg2ord.isOrdered, metaclassType=trgMetaclass)
+
+      info = views.AssociationInfo(
+        uuid = ma.uuid,
+        name = ma.name,
+        source = srcInfo,
+        target = trgInfo,
+        targetIsComposite = targetEnd.isCompositeTarget)
+
+      _ = java.lang.System.out.println(info)
+    } yield info
 
     val mcGeneral2ParentPairs
     : Set[(metamodel.MetaClass, metamodel.MetaClass)]
@@ -116,16 +171,20 @@ object UMLMetamodelResolver {
     }.toMap
 
     val mc2DirectAttributes
-    : Map[metamodel.MetaClass, Set[features.DataTypedAttributeUnorderedProperty]]
+    : Map[metamodel.MetaClass, Set[features.DataTypedAttributeProperty]]
     = umlR
       .metaclass2attribute
       .flatMap { mc2attrib =>
         for {
+
           mc <-
           metaclasses.find(_.uuid == mc2attrib.metaClass)
 
           attrib <-
-          umlR.attributes.select { case a: features.DataTypedAttributeUnorderedProperty => a }.find(_.uuid == mc2attrib.attribute)
+          umlR.attributes
+            .select { case a: features.DataTypedAttributeProperty => a }
+            .find(_.uuid == mc2attrib.attribute)
+
         } yield mc -> attrib
       }
       .groupBy(_._1)
@@ -133,25 +192,30 @@ object UMLMetamodelResolver {
 
 
     val mc2AllAttributes
-    : Map[metamodel.MetaClass, Set[features.DataTypedAttributeUnorderedProperty]]
+    : Map[metamodel.MetaClass, Set[features.DataTypedAttributeProperty]]
     = metaclasses
       .to[Set]
-      .foldLeft(Map.empty[metamodel.MetaClass, Set[features.DataTypedAttributeUnorderedProperty]]) {
-        case (acc: Map[metamodel.MetaClass, Set[features.DataTypedAttributeUnorderedProperty]], mc: metamodel.MetaClass) =>
+      .foldLeft(Map.empty[metamodel.MetaClass, Set[features.DataTypedAttributeProperty]]) {
+        case (acc: Map[metamodel.MetaClass, Set[features.DataTypedAttributeProperty]],
+              mc: metamodel.MetaClass) =>
 
-          val mcAttribs = mc2DirectAttributes.getOrElse(mc, Set.empty[features.DataTypedAttributeUnorderedProperty])
+          val mcAttribs = mc2DirectAttributes.getOrElse(mc, Set.empty[features.DataTypedAttributeProperty])
 
           def combine
-          (current: Map[metamodel.MetaClass, Set[features.DataTypedAttributeUnorderedProperty]],
+          (current: Map[metamodel.MetaClass, Set[features.DataTypedAttributeProperty]],
            s: metamodel.MetaClass)
-          : Map[metamodel.MetaClass, Set[features.DataTypedAttributeUnorderedProperty]]
-          = current.updated(s, mcAttribs ++ current.getOrElse(s, Set.empty[features.DataTypedAttributeUnorderedProperty]))
+          : Map[metamodel.MetaClass, Set[features.DataTypedAttributeProperty]]
+          = current
+            .updated(s,
+              mcAttribs ++ current.getOrElse(s, Set.empty[features.DataTypedAttributeProperty]))
 
           transitiveClosure(mc, acc)(getSpecializedMetaclasses, combine)
       }
 
     UMLMetamodelResolver(primitiveTypesR, umlR,
       metaclasses,
+      associations,
+      associationViews,
       mc2DirectGeneralizations,
       mc2DirectSpecializations,
       mcName2UUID,

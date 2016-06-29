@@ -14,6 +14,28 @@ toolbarMenuScripts(
  	})
 
 dynamicScripts(
+      name='OTI/MOF Transaction Commit Listener'
+      [ m: Model ]
+      scripts {
+          BrowserContextMenuAction(
+              name: 'Register OTI/MOF Transaction Listener'
+              project: imce.oti.mof.magicdraw.dynamicscripts
+              dependencies: { org.omg.oti.mof.schema, org.omg.oti.mof.spark, imce.oti.uml.magicdraw.dynamicscripts, org.omg.oti.uml.json, org.omg.oti.uml.json.serialization, org.omg.oti.uml.core, org.omg.oti.uml.composite_structure_tree_analysis, org.omg.oti.uml.change_migration, org.omg.oti.uml.magicdraw.adapter }
+              access: r/o
+              class: imce.oti.mof.magicdraw.dynamicscripts.transactions.OTIMOFTransactionListener
+              method: registerListener
+          )
+          BrowserContextMenuAction(
+              name: 'Unregister OTI/MOF Transaction Listener'
+              project: imce.oti.mof.magicdraw.dynamicscripts
+              dependencies: { org.omg.oti.mof.schema, org.omg.oti.mof.spark, imce.oti.uml.magicdraw.dynamicscripts, org.omg.oti.uml.json, org.omg.oti.uml.json.serialization, org.omg.oti.uml.core, org.omg.oti.uml.composite_structure_tree_analysis, org.omg.oti.uml.change_migration, org.omg.oti.uml.magicdraw.adapter }
+              access: r/o
+              class: imce.oti.mof.magicdraw.dynamicscripts.transactions.OTIMOFTransactionListener
+              method: unregisterListener
+          )
+      })
+
+dynamicScripts(
       name='OMG Tool Infrastructure / MOF Json'
       [ m: Model ]
       scripts {

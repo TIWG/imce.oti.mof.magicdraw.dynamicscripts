@@ -404,7 +404,7 @@ object ExportAsOTIMOFModels {
   = {
     val mdE = e.getMagicDrawElement
     val mdMC = mdE.eClass
-    val attribs = umlResolver.mc2AllAttributes.getOrElse(mdMC.getName, Set.empty[features.DataTypedAttributeUnorderedProperty])
+    val attribs = umlResolver.mc2AllAttributes.getOrElse(mdMC.getName, Set.empty[features.DataTypedAttributeProperty])
 
     mdMC.getEAllAttributes.aggregate[Vector[java.lang.Throwable] \&/ Vector[model.ModelElementAttributeValue]](
       \&/.That(Vector())
