@@ -35,6 +35,19 @@ dynamicScripts(
           )
       })
 
+toolbarMenuScripts(
+	name='OMG Tool Infrastructure / MOF Json'
+	scripts {
+		MainToolbarMenuAction(
+			toolbarMenuPath: { 'OMG Tool Infrastructure / MOF Json' }
+            name: 'Export OTI DocumentSet configuration to OTI MOF Json Resources'
+            project: imce.oti.mof.magicdraw.dynamicscripts
+            dependencies: { org.omg.oti.mof.schema, imce.oti.uml.magicdraw.dynamicscripts, org.omg.oti.uml.json, org.omg.oti.uml.json.serialization, org.omg.oti.uml.core, org.omg.oti.uml.composite_structure_tree_analysis, org.omg.oti.uml.change_migration, org.omg.oti.uml.magicdraw.adapter }
+            access: r/o
+            class: imce.oti.mof.magicdraw.dynamicscripts.tiwg.ExportOTIDocumentSetConfigurationToOTIMOFJsonResources
+            method: doit )
+ 	})
+
 dynamicScripts(
       name='OMG Tool Infrastructure / MOF Json'
       [ m: Model ]

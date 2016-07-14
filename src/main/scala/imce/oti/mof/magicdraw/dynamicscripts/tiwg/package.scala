@@ -38,9 +38,23 @@
  */
 package imce.oti.mof.magicdraw.dynamicscripts
 
+import java.io.File
+import java.lang.{Runnable,System}
+import javax.swing.filechooser.FileFilter
+import javax.swing.{JFileChooser, SwingUtilities}
+
+import com.nomagic.magicdraw.core.Application
+
 import org.omg.oti.uml.read.api.UMLElement
 import org.omg.oti.uml.xmi.Document
 import org.omg.oti.magicdraw.uml.read.MagicDrawUML
+
+import gov.nasa.jpl.dynamicScripts.magicdraw.utils.MDUML._
+
+import scala.util.Try
+import scala.{Boolean,Int,Option,None,Some,StringContext,Unit}
+import scala.Predef.String
+
 
 package object tiwg {
 
@@ -51,5 +65,60 @@ package object tiwg {
   implicit def toElementHelper(e: UMLElement[MagicDrawUML])
   : ElementHelper
   = new ElementHelper(e)
+
+  // @todo move this to MDUML.
+  def chooseDirectory
+  ( title: String,
+    description: String,
+    dir: File = getApplicationInstallDir )
+  : Try[Option[File]] =
+
+    Try {
+      var result: Option[File] = None
+
+      def chooser = new Runnable {
+        override def run(): Unit = {
+
+          val ff = new FileFilter() {
+
+            def getDescription: String = description
+
+            def accept(f: File): Boolean =
+              f.isDirectory && f.exists()
+
+          }
+
+          val fc = new JFileChooser(dir)
+          fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY)
+          fc.setDialogTitle(title)
+
+          fc.setFileFilter(ff)
+          fc.setFileHidingEnabled(false)
+          fc.setAcceptAllFileFilterUsed(false)
+          fc.setDialogType(JFileChooser.SAVE_DIALOG)
+
+          fc.showSaveDialog(Application.getInstance().getMainFrame) match {
+            case JFileChooser.APPROVE_OPTION =>
+              val dir = fc.getSelectedFile
+              if (dir.exists() && dir.isDirectory && dir.canWrite) {
+                System.out.println(s"Selected directory OK: $dir")
+                result = Some(dir)
+              } else {
+                System.out.println(s"Selected directory error: $dir")
+                result = None
+              }
+            case _ =>
+              result = None
+          }
+        }
+      }
+
+      if (SwingUtilities.isEventDispatchThread)
+        chooser.run()
+      else
+        SwingUtilities.invokeAndWait(chooser)
+
+      result
+    }
 
 }

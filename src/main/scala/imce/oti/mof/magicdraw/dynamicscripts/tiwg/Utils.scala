@@ -237,16 +237,18 @@ object Utils {
                 val config = documentSelection.getOrElse(OTIDocumentSetConfiguration.empty)
 
                 val result = for {
-                  odsa <- MagicDrawOTIAdapters.withInitialDocumentSetForDataAdapter(oa)
+                  odsa1 <- MagicDrawOTIAdapters.withInitialDocumentSetForDataAdapter(oa)
 
                   selectedSpecificationRootPackages <- (init /: config.documents) {
-                    lookupAndAddDocumentPackage(p, odsa)
+                    lookupAndAddDocumentPackage(p, odsa1)
                   }
 
+                  odsa2 <- MagicDrawOTIHelper.getOTIMagicDrawDataDocumentSetAdapter(
+                    oa, selectedSpecificationRootPackages, MagicDrawOTIHelper.defaultExtentOfPkg)
                 } yield
                   for {
                     er <- action(
-                      p, odsa, resourceExtents, config,
+                      p, odsa2, resourceExtents, config,
                       selectedSpecificationRootPackages)
                   } yield er
 

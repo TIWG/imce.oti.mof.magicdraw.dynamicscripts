@@ -52,6 +52,7 @@ import gov.nasa.jpl.dynamicScripts.DynamicScriptsTypes
 import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataResults
 
 import imce.oti.mof.resolvers.UMLMetamodelResolver
+import imce.oti.mof.magicdraw.dynamicscripts.transactions.MetamodelTransactionPropertyNameCache
 
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper.MagicDrawOTIDocumentSetAdapterForDataProvider
 import org.omg.oti.magicdraw.uml.read.{MagicDrawUML, MagicDrawUMLElement}
@@ -65,7 +66,6 @@ import org.omg.oti.uml.characteristics.OTICharacteristicsProvider
 import org.omg.oti.uml.read.api._
 import org.omg.oti.uml.xmi.Document
 
-import scala.collection.JavaConversions._
 import scala.collection.immutable._
 import scala.{None, Option, Some, StringContext, Tuple2, Tuple3, Tuple4}
 import scala.Predef.{ArrowAssoc, String}
@@ -123,37 +123,29 @@ object ExportAsOTIMOFModels {
     selectedSpecificationRootPackages: Set[UMLPackage[MagicDrawUML]] )
   : Try[Option[MagicDrawValidationDataResults]]
   = for {
+    cache <- resourceExtents.find(Utils.PrimitiveTypes_IRI == _.resource.iri) match {
+      case Some(primitiveTypesR: OTIMOFLibraryResourceExtent) =>
+        resourceExtents.find(Utils.UML25_IRI == _.resource.iri) match {
+          case Some(umlR: OTIMOFMetamodelResourceExtent) =>
+            Success(MetamodelTransactionPropertyNameCache(UMLMetamodelResolver.initialize(primitiveTypesR, umlR)))
+          case _ =>
+            Failure(new java.lang.IllegalArgumentException("Need MagicDraw's UML OTI MOF Metamodel resource"))
+        }
+      case _ =>
+        Failure(new java.lang.IllegalArgumentException("Need MagicDraw's PrimitiveTypes OTI MOF Library resource"))
+    }
     cbpf <- ExportAsOTIMOFProfiles.exportAsOTIMOFProfile(
       p, odsa,
       resourceExtents)
-    cbm <- exportAsOTIMOFModel(p, odsa, resourceExtents)
+    cbm = {
+      implicit val c: MetamodelTransactionPropertyNameCache = cache
+      exportAsOTIMOFModel(p, odsa) _
+    }
     er <- Utils.exportAsOTIMOFProfiledResources(
       p, odsa, config,
       selectedSpecificationRootPackages,
       resourceExtents, cbpf, cbm, "exportAsOTIMOFModel")
   } yield er
-
-  // need something to only go over non-profile document packages!
-
-  def exportAsOTIMOFModel
-  ( p: Project,
-    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
-    resourceExtents: Set[OTIMOFResourceExtent])
-  : Try[(Vector[(Document[MagicDrawUML], OTIMOFProfileResourceExtent)], Document[MagicDrawUML], Set[Document[MagicDrawUML]]) => \&/[Vector[java.lang.Throwable], OTIMOFModelResourceExtent]]
-  = resourceExtents.find(Utils.PrimitiveTypes_IRI == _.resource.iri) match {
-    case Some(primitiveTypesR: OTIMOFLibraryResourceExtent) =>
-      resourceExtents.find(Utils.UML25_IRI == _.resource.iri) match {
-        case Some(umlR: OTIMOFMetamodelResourceExtent) =>
-          import Utils.selectable
-          implicit val umlResolver = UMLMetamodelResolver.initialize(primitiveTypesR, umlR)
-          Success(
-            exportAsOTIMOFModel(p, odsa))
-        case _ =>
-          Failure(new java.lang.IllegalArgumentException("No MD18 UML2.5 metamodel resource found!"))
-      }
-    case _ =>
-      Failure(new java.lang.IllegalArgumentException("No MD18 PrimitiveTypes library resource found!"))
-  }
 
   type AppliedStereotypesByOptionalProfile =
   Map[
@@ -275,7 +267,7 @@ object ExportAsOTIMOFModels {
   ( pfExtents: Vector[(Document[MagicDrawUML], OTIMOFProfileResourceExtent)],
     d: Document[MagicDrawUML],
     pkgDocuments: Set[Document[MagicDrawUML]] )
-  ( implicit umlResolver: UMLMetamodelResolver )
+  ( implicit cache: MetamodelTransactionPropertyNameCache )
   : Vector[java.lang.Throwable] \&/ OTIMOFModelResourceExtent
   = for {
     allAppliedStereotypesByOptionalProfile <- d.scope.allAppliedStereotypesByProfile match {
@@ -305,7 +297,7 @@ object ExportAsOTIMOFModels {
 
     result <- exportAsOTIMOFModelExtent(
       p, odsa, pfExtents,
-      d, modelIRI, appliedStereotypes, allAppliedStereotypesByProfile)(umlResolver)
+      d, modelIRI, appliedStereotypes, allAppliedStereotypesByProfile)
 
   } yield result
 
@@ -317,52 +309,54 @@ object ExportAsOTIMOFModels {
     modelIRI: common.ResourceIRI,
     appliedStereotypes: Vector[model.AppliedStereotype],
     allAppliedStereotypesByProfile: AppliedStereotypesByProfile)
-  (implicit umlResolver: UMLMetamodelResolver)
+  (implicit cache: MetamodelTransactionPropertyNameCache)
   : Vector[java.lang.Throwable] \&/ OTIMOFModelResourceExtent
   = {
     implicit val ops = odsa.otiAdapter.umlOps
-
     val ch = odsa.otiAdapter.otiCharacteristicsProvider
 
     def elementAttributeSeqOp
     ( acc: Vector[java.lang.Throwable] \&/ Vector[model.ModelElementAttributeValue],
       e: MagicDrawUMLElement )
     : Vector[java.lang.Throwable] \&/ Vector[model.ModelElementAttributeValue]
-    = acc append toModelElementAttributeValues(e, ch, umlResolver)
+    = acc
+      .append(ModelElementAttributeValueExporter.toModelElementAttributeValues(e, ch))
+      .append(ModelElementAttributeValueExporter.toModelElementStereotypeAttributeValues(e, ch))
 
     val pExtent = d.extent match {
       case ex: Set[UMLElement[MagicDrawUML]] =>
-        ex.map(ops.umlMagicDrawUMLElement) //.par
+        ex.map(ops.umlMagicDrawUMLElement)
       case ex =>
-        ex.map(ops.umlMagicDrawUMLElement).toSet //.par
+        ex.map(ops.umlMagicDrawUMLElement).toSet
     }
 
-//    pExtent.tasksupport =
-//      new scala.collection.parallel.ForkJoinTaskSupport(
-//        new scala.concurrent.forkjoin.ForkJoinPool(Utils.poolSize))
+    val parExtent = pExtent.toVector.par
+    parExtent.tasksupport =
+      new scala.collection.parallel.ForkJoinTaskSupport(
+        new scala.concurrent.forkjoin.ForkJoinPool(Utils.poolSize))
 
     val elements
     : Vector[model.ModelElement]
-    = pExtent.map(toModelElement).toVector
+    = parExtent.map(toModelElement).toVector
 
     val links
     : Vector[model.ModelLink]
-    = Vector()
+    = parExtent.map(ops.umlMagicDrawUMLElement).flatMap(ModelLinkExporter.toModelLinks(odsa, cache)).seq
 
     val appliedStereotypePropertyReferences
     : Vector[model.AppliedStereotypePropertyReference]
-    = Vector()
+    = parExtent.map(ops.umlMagicDrawUMLElement).flatMap(ModelStereotypeTagPropertyExporter.toTagValue(odsa, cache)).seq
 
     val elementAttributeValues
     : Vector[java.lang.Throwable] \&/ Vector[model.ModelElementAttributeValue]
-    = pExtent
+    = parExtent
       .aggregate[Vector[java.lang.Throwable] \&/ Vector[model.ModelElementAttributeValue]](\&/.That(Vector()))(
       elementAttributeSeqOp, _ append _)
 
     val instantiatedMetamodels
     : Vector[OTIMOFResourceInstantiatedMetamodel]
     = Vector(OTIMOFResourceInstantiatedMetamodel(
-      instantiatedMetamodel = umlResolver.umlR.resource.iri,
+      instantiatedMetamodel = cache.resolver.umlR.resource.iri,
       instantiatingModel = modelIRI))
 
     val app = Application.getInstance()
@@ -378,7 +372,7 @@ object ExportAsOTIMOFModels {
       instantiatedMetamodels,
       allAppliedStereotypesByProfile.map(_._3))
 
-    guiLog.log(s"Extent: ${d.info.packageURI}")
+    guiLog.log(s"Model Extent: ${d.info.packageURI}")
 
     elementAttributeValues.onlyThis match {
       case None =>
@@ -390,100 +384,11 @@ object ExportAsOTIMOFModels {
 
   def toModelElement
   (e: UMLElement[MagicDrawUML])
-  (implicit umlResolver: UMLMetamodelResolver)
+  (implicit cache: MetamodelTransactionPropertyNameCache)
   : model.ModelElement
   = model.ModelElement(
     uuid = e.toOTIMOFEntityUUID,
-    metaClass = umlResolver.mcName2UUID(e.mofMetaclassName))
+    metaClass = cache.resolver.mcName2UUID(e.mofMetaclassName))
 
-  def toModelElementAttributeValues
-  (e: MagicDrawUMLElement,
-   otiCharacteristicsProvider: OTICharacteristicsProvider[MagicDrawUML],
-   umlResolver: UMLMetamodelResolver)
-  : Vector[java.lang.Throwable] \&/ Vector[model.ModelElementAttributeValue]
-  = {
-    val mdE = e.getMagicDrawElement
-    val mdMC = mdE.eClass
-    val attribs = umlResolver.mc2AllAttributes.getOrElse(mdMC.getName, Set.empty[features.DataTypedAttributeProperty])
-
-    mdMC.getEAllAttributes.aggregate[Vector[java.lang.Throwable] \&/ Vector[model.ModelElementAttributeValue]](
-      \&/.That(Vector())
-    )(
-      {
-        case (acc, ea) if !ea.isDerived =>
-          val name = ea.getName
-
-          attribs
-            .find { p =>
-              name == p.name.value
-            } match {
-
-            case None =>
-              acc
-
-            case Some(attrib) =>
-              if (!mdE.eIsSet(ea))
-                acc
-              else {
-                // @todo it seems that MD UML Ecore metamodel does not have default values...
-                val default = ea.getDefaultValue
-
-                if (ea.isOrdered) {
-                  val attributeValues = mdE.eGet(ea) match {
-                    case vs: java.util.Collection[_] =>
-                      vs
-                        .zipWithIndex
-                        .map { case (v, i) =>
-                          model.ModelElementOrderedAttributeValue(
-                            modelElement = e.toOTIMOFEntityUUID,
-                            attributeValue = values.AtomicValue(
-                              attribute = attrib.uuid,
-                              value = common.AtomicValueRepresentation(v.toString)),
-                            index = i)
-                        }
-                        .toVector
-                    case v =>
-                      Vector(
-                        model.ModelElementOrderedAttributeValue(
-                          modelElement = e.toOTIMOFEntityUUID,
-                          attributeValue = values.AtomicValue(
-                            attribute = attrib.uuid,
-                            value = common.AtomicValueRepresentation(v.toString)),
-                          index = 0))
-                  }
-                  acc append \&/.That(attributeValues)
-                } else {
-                  val attributeValues = mdE.eGet(ea) match {
-                    case vs: java.util.Collection[_] =>
-                      vs
-                        .map { v =>
-                          model.ModelElementUnorderedAttributeValue(
-                            modelElement = e.toOTIMOFEntityUUID,
-                            attributeValue = values.AtomicValue(
-                              attribute = attrib.uuid,
-                              value = common.AtomicValueRepresentation(v.toString)))
-                        }
-                        .toVector
-                    case v =>
-                      if (v != default)
-                        Vector(
-                          model.ModelElementUnorderedAttributeValue(
-                            modelElement = e.toOTIMOFEntityUUID,
-                            attributeValue = values.AtomicValue(
-                              attribute = attrib.uuid,
-                              value = common.AtomicValueRepresentation(v.toString))))
-                      else
-                        Vector()
-                  }
-                  acc append \&/.That(attributeValues)
-                }
-              }
-          }
-
-        case (acc, _) =>
-          acc
-      },
-      _ append _)
-  }
 
 }

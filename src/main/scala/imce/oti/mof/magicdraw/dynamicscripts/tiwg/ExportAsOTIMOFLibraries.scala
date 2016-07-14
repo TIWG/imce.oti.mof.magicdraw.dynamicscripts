@@ -149,7 +149,7 @@ object ExportAsOTIMOFLibraries {
         classifiers=pExtent.flatMap(toDatatypeClassifier(_)).toVector.sortBy(_.name)
       )
 
-      guiLog.log(s"Extent: ${d.info.packageURI}")
+      guiLog.log(s"Library Extent: ${d.info.packageURI}")
 
       \&/.That(extent)
     })

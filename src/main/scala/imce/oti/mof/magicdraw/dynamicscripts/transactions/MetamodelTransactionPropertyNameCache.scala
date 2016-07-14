@@ -65,7 +65,9 @@ import scala.{Boolean, Int, None, Option, Ordering, Some, StringContext, Tuple2,
 import scala.Predef.{ArrowAssoc, String, augmentString, require}
 
 case class MetamodelTransactionPropertyNameCache
-( otiMetaclasses: Map[EClass, metamodel.MetaClass],
+( resolver: UMLMetamodelResolver,
+
+  otiMetaclasses: Map[EClass, metamodel.MetaClass],
 
   metaclasses: SortedSet[EClass],
 
@@ -90,33 +92,37 @@ case class MetamodelTransactionPropertyNameCache
   : Option[(EClass, views.AssociationInfo, EReference, EReference)]
   = ev.getSource match {
     case e: EObject =>
-      for {
-        eMC <- Option.apply(e.eClass)
-        tuples <- metaclassContainmentAssociationForwardProperties.get(eMC)
-        targetName = ev.getPropertyName
-        tuple <- tuples.get( targetName )
-        _ = require(tuple._3.getEType.isInstance(e))
-      } yield Tuple4(eMC, tuple._1, tuple._2, tuple._3)
-
+      lookupContainment(e, ev.getPropertyName)
     case _ =>
       None
   }
+
+  def lookupContainment(e: EObject, metaProperty: String)
+  : Option[(EClass, views.AssociationInfo, EReference, EReference)]
+  = for {
+    eMC <- Option.apply(e.eClass)
+    tuples <- metaclassContainmentAssociationForwardProperties.get(eMC)
+    tuple <- tuples.get( metaProperty )
+    _ = require(tuple._3.getEType.isInstance(e))
+  } yield Tuple4(eMC, tuple._1, tuple._2, tuple._3)
 
   def lookupReferencePropertyChangeEvent(ev: PropertyChangeEvent)
   : Option[(EClass, views.AssociationInfo, EReference, EReference)]
   = ev.getSource match {
     case e: EObject =>
-      for {
-        eMC <- Option.apply(e.eClass)
-        tuples <- metaclassReferenceAssociationForwardProperties.get(eMC)
-        targetName = ev.getPropertyName
-        tuple <- tuples.get( targetName )
-        _ = require(tuple._3.getEType.isInstance(e))
-      } yield Tuple4(eMC, tuple._1, tuple._2, tuple._3)
-
+      lookupReference(e, ev.getPropertyName)
     case _ =>
       None
   }
+
+  def lookupReference(e: EObject, metaProperty: String)
+  : Option[(EClass, views.AssociationInfo, EReference, EReference)]
+  = for {
+    eMC <- Option.apply(e.eClass)
+    tuples <- metaclassReferenceAssociationForwardProperties.get(eMC)
+    tuple <- tuples.get( metaProperty )
+    _ = require(tuple._3.getEType.isInstance(e))
+  } yield Tuple4(eMC, tuple._1, tuple._2, tuple._3)
 
   def lookupPropertyChangeEvent(ev: PropertyChangeEvent)
   : Option[(EClass, views.AssociationInfo, EReference, EReference)]
@@ -126,33 +132,37 @@ case class MetamodelTransactionPropertyNameCache
   : Option[(EClass, views.AssociationInfo, EReference, EReference)]
   = ev.getSource match {
     case e: EObject =>
-      for {
-        eMC <- Option.apply(e.eClass)
-        tuples <- metaclassContainmentAssociationReverseProperties.get(eMC)
-        targetName = ev.getPropertyName
-        tuple <- tuples.values.find ( targetName == _._3.getName )
-        _ = require(tuple._2.getEType.isInstance(e))
-      } yield Tuple4(eMC, tuple._1, tuple._2, tuple._3)
-
+      lookupInverseContainment(e, ev.getPropertyName)
     case _ =>
       None
   }
+
+  def lookupInverseContainment(e: EObject, metaProperty: String)
+  : Option[(EClass, views.AssociationInfo, EReference, EReference)]
+  = for {
+    eMC <- Option.apply(e.eClass)
+    tuples <- metaclassContainmentAssociationReverseProperties.get(eMC)
+    tuple <- tuples.values.find ( metaProperty == _._3.getName )
+    _ = require(tuple._2.getEType.isInstance(e))
+  } yield Tuple4(eMC, tuple._1, tuple._2, tuple._3)
 
   def lookupInverseReferencePropertyChangeEvent(ev: PropertyChangeEvent)
   : Option[(EClass, views.AssociationInfo, EReference, EReference)]
   = ev.getSource match {
     case e: EObject =>
-      for {
-        eMC <- Option.apply(e.eClass)
-        tuples <- metaclassReferenceAssociationReverseProperties.get(eMC)
-        targetName = ev.getPropertyName
-        tuple <- tuples.values.find ( targetName == _._3.getName )
-        _ = require(tuple._2.getEType.isInstance(e))
-      } yield Tuple4(eMC, tuple._1, tuple._2, tuple._3)
-
+      lookupInverseReference(e, ev.getPropertyName)
     case _ =>
       None
   }
+
+  def lookupInverseReference(e: EObject, metaProperty: String)
+  : Option[(EClass, views.AssociationInfo, EReference, EReference)]
+  = for {
+    eMC <- Option.apply(e.eClass)
+    tuples <- metaclassReferenceAssociationReverseProperties.get(eMC)
+    tuple <- tuples.values.find ( metaProperty == _._3.getName )
+    _ = require(tuple._2.getEType.isInstance(e))
+  } yield Tuple4(eMC, tuple._1, tuple._2, tuple._3)
 
   def lookupInversePropertyChangeEvent(ev: PropertyChangeEvent)
   : Option[(EClass, views.AssociationInfo, EReference, EReference)]
@@ -167,31 +177,6 @@ object MetamodelTransactionPropertyNameCache {
     def compare(ec1: EClass, ec2: EClass): Int = {
       return ec1.getName.compareTo(ec2.getName)
     }
-  }
-
-  protected val TRANSACTION_MODIFIABLE_PROPERTY_NAMES_BY_METACLASS
-  : SortedMap[EClass, SortedSet[String]] = new TreeMap[EClass, SortedSet[String]]()
-
-  def describeModifiablePropertyNamesForMetaclass(mc: EClass): String = {
-    val modifiablePropertyNames
-    : SortedSet[String]
-    = TRANSACTION_MODIFIABLE_PROPERTY_NAMES_BY_METACLASS.getOrElse(mc, SortedSet.empty[String])
-    if (null == modifiablePropertyNames) return null
-    val buff: scala.collection.mutable.StringBuilder = new scala.collection.mutable.StringBuilder
-    for (modifiablePropertyName <- modifiablePropertyNames) {
-      buff.append(s" 'modifiablePropertyName'")
-    }
-    return buff.toString
-  }
-
-  def getModifiablePropertyNamesForMetaclassOfElement(e: Element): SortedSet[String] = {
-    if (e == null) return null
-    val ec: EClass = e.eClass
-    if (ec == null) return null
-    val containmentPropertyNames
-    : SortedSet[String]
-    = TRANSACTION_MODIFIABLE_PROPERTY_NAMES_BY_METACLASS.getOrElse(ec, SortedSet.empty[String])
-    return containmentPropertyNames
   }
 
   def apply
@@ -435,6 +420,7 @@ object MetamodelTransactionPropertyNameCache {
 
     val cache =
     MetamodelTransactionPropertyNameCache(
+      umlMM,
       otiMetaclasses,
       metaclasses,
       taxonomy,

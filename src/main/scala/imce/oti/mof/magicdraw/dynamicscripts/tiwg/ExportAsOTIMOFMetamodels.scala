@@ -341,7 +341,7 @@ object ExportAsOTIMOFMetamodels {
       }
     )
 
-    guiLog.log(s"Extent: ${d.info.packageURI}")
+    guiLog.log(s"Metamodel Extent: ${d.info.packageURI}")
 
     \&/.That(extent)
   }

@@ -235,7 +235,8 @@ object ExportAsOTIMOFProfiles {
       s.attribute.flatMap {
         case p if !p.isDerived =>
           p._type match {
-            case Some(ps: UMLStereotype[MagicDrawUML]) if ss.contains(ps) =>
+            // @todo check for ps defined in an exported profile.
+            case Some(ps: UMLStereotype[MagicDrawUML]) /* if ss.contains(ps) */ =>
               Some((s, p, ps))
             case _ =>
               None
@@ -249,7 +250,7 @@ object ExportAsOTIMOFProfiles {
       s2mc <- getStereotype2ExtendedMetaclasses(ss, umlR)
       ext = OTIMOFProfileResourceExtent(
         resource = OTIMOFProfile(d.toOTIMOFResourceIRI),
-        exendedMetamodels = Vector(profile.Profile2ExtendedMetamodel(
+        extendedMetamodels = Vector(profile.Profile2ExtendedMetamodel(
           extendedMetamodel = umlR.resource.iri,
           extendingProfile = d.toOTIMOFResourceIRI)),
         importedProfiles = pf.packageImport.toVector.flatMap { pi =>
@@ -361,7 +362,7 @@ object ExportAsOTIMOFProfiles {
             targetStereotype = st.toOTIMOFEntityUUID)
         })
     } yield {
-      guiLog.log(s"Extent: ${d.info.packageURI}")
+      guiLog.log(s"Profile Extent: ${d.info.packageURI}")
       ext
     }
   }

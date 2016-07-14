@@ -131,7 +131,7 @@ object UMLMetamodelResolver {
         target = trgInfo,
         targetIsComposite = targetEnd.isCompositeTarget)
 
-      _ = java.lang.System.out.println(info)
+      //_ = java.lang.System.out.println(info)
     } yield info
 
     val mcGeneral2ParentPairs
