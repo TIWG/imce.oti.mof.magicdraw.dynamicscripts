@@ -10,6 +10,8 @@ import gov.nasa.jpl.imce.sbt.ProjectHelper._
 
 useGpg := true
 
+updateOptions := updateOptions.value.withCachedResolution(true)
+
 developers := List(
   Developer(
     id="rouquett",
@@ -111,7 +113,7 @@ lazy val core = Project("imce-oti-mof-magicdraw-dynamicscripts", file("."))
   .enablePlugins(IMCEReleasePlugin)
   .settings(dynamicScriptsResourceSettings("imce.oti.mof.magicdraw.dynamicscripts"))
   .settings(IMCEPlugin.strictScalacFatalWarningsSettings)
-  .settings(docSettings(diagrams=false))
+  //.settings(docSettings(diagrams=false))
   .settings(IMCEReleasePlugin.packageReleaseProcessSettings)
   .settings(
     IMCEKeys.licenseYearOrRange := "2014-2016",
