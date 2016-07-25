@@ -39,7 +39,6 @@
 package imce.oti.mof.magicdraw.dynamicscripts.tiwg
 
 import java.awt.event.ActionEvent
-import java.io.PrintWriter
 import java.lang.System
 import java.util.concurrent.TimeUnit
 
@@ -57,19 +56,16 @@ import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataR
 import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.utils.OTIHelper
 import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.validation.OTIMagicDrawValidation
 import org.omg.oti.json.common._
-import org.omg.oti.json.uml.serialization.OTIJsonSerializationHelper
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper.{MagicDrawOTIDocumentSetAdapterForProfileProvider, MagicDrawOTIHelper, MagicDrawOTIProfileAdapter}
 import org.omg.oti.magicdraw.uml.read.MagicDrawUML
 import org.omg.oti.uml._
 import org.omg.oti.uml.read.api.{UMLElement, UMLPackage}
-import org.omg.oti.uml.xmi.Document
 import play.api.libs.json._
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable._
-import scala.{Boolean, Int, Long, None, Option, Some, StringContext, Unit}
-import scala.Predef.{ArrowAssoc, augmentString, refArrayOps}
-import scala.util.{Failure, Success, Try}
+import scala.{Long, Option, StringContext, Unit}
+import scala.util.Try
 import scalaz.Scalaz._
 import scalaz._
 

@@ -52,7 +52,7 @@ import org.omg.oti.magicdraw.uml.read.MagicDrawUML
 import gov.nasa.jpl.dynamicScripts.magicdraw.utils.MDUML._
 
 import scala.util.Try
-import scala.{Boolean,Int,Option,None,Some,StringContext,Unit}
+import scala.{Boolean,Option,None,Some,StringContext,Unit}
 import scala.Predef.String
 
 

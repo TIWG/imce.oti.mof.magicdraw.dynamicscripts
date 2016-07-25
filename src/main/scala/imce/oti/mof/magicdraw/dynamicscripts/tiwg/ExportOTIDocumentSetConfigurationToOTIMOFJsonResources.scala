@@ -39,9 +39,7 @@
 package imce.oti.mof.magicdraw.dynamicscripts.tiwg
 
 import java.awt.event.ActionEvent
-import java.io.File
 import java.nio.file.Path
-import java.lang.System
 
 import com.nomagic.actions.NMAction
 import com.nomagic.magicdraw.core.Project
@@ -63,8 +61,8 @@ import org.omg.oti.uml.xmi.Document
 
 import scala.collection.immutable._
 import scala.util.{Failure, Success, Try}
-import scala.{None, Option, Some, StringContext, Tuple2, Unit}
-import scala.Predef.{ArrowAssoc, String}
+import scala.{None, Option, Some, StringContext, Tuple2}
+import scala.Predef.String
 import scalaz.Scalaz._
 import scalaz._
 

@@ -53,7 +53,7 @@ import org.omg.oti.uml.xmi.Document
 import play.api.libs.json._
 
 import scala.collection.immutable._
-import scala.{Int, None, Option, Some, StringContext, Tuple2, Tuple4, Unit}
+import scala.{Int, None, Some, StringContext, Tuple2, Tuple4, Unit}
 import scala.Predef.{augmentString,require,String}
 import scala.util.control.Exception._
 import scalaz._

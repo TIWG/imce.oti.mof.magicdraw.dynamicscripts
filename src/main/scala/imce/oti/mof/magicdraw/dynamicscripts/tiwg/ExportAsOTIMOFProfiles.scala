@@ -50,10 +50,8 @@ import imce.oti.mof.resolvers.UMLMetamodelResolver
 
 import gov.nasa.jpl.dynamicScripts.DynamicScriptsTypes
 import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataResults
-import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.ui.ProfileInspectorWidget
 
 import org.omg.oti.json.common.{OTIDocumentSetConfiguration,OTIPrimitiveTypes}
-import org.omg.oti.json.uml.serialization.OTIJsonSerializationHelper
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper.MagicDrawOTIDocumentSetAdapterForDataProvider
 import org.omg.oti.magicdraw.uml.read.MagicDrawUML
 import org.omg.oti.mof.schema._
@@ -62,7 +60,7 @@ import org.omg.oti.uml.read.api._
 import org.omg.oti.uml.xmi.Document
 
 import scala.collection.immutable._
-import scala.{Int, None, Option, PartialFunction, Some, StringContext, Tuple4}
+import scala.{Int, None, Option, Some, StringContext, Tuple4}
 import scala.util.{Failure, Success, Try}
 import scalaz._
 

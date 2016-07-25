@@ -42,7 +42,7 @@ import org.omg.oti.mof.schema._
 import imce.oti.mof.magicdraw.dynamicscripts.tiwg.Utils._
 
 import scala.collection.immutable._
-import scala.{Some,Tuple2,Tuple3}
+import scala.Tuple2
 import scala.Predef.{ArrowAssoc, String}
 
 case class UMLMetamodelResolver

@@ -39,13 +39,11 @@
 package imce.oti.mof.magicdraw.dynamicscripts.tiwg
 
 import java.awt.event.ActionEvent
-import java.lang.System
 
 import com.nomagic.magicdraw.core.{Application, Project}
 import com.nomagic.magicdraw.ui.browser.{Node => MDNode, Tree => MDTree}
 import com.nomagic.magicdraw.uml.symbols.{DiagramPresentationElement, PresentationElement}
 import com.nomagic.magicdraw.uml.symbols.shapes.PackageView
-import com.nomagic.uml2.ext.jmi.helpers.StereotypesHelper
 import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Package
 
 import gov.nasa.jpl.dynamicScripts.DynamicScriptsTypes
@@ -58,17 +56,15 @@ import org.omg.oti.magicdraw.uml.canonicalXMI.helper.MagicDrawOTIDocumentSetAdap
 import org.omg.oti.magicdraw.uml.read.{MagicDrawUML, MagicDrawUMLElement}
 
 import org.omg.oti.json.common.OTIDocumentSetConfiguration
-import org.omg.oti.json.uml.serialization.OTIJsonSerializationHelper
 
 import org.omg.oti.mof.schema._
 import org.omg.oti.uml._
-import org.omg.oti.uml.characteristics.OTICharacteristicsProvider
 import org.omg.oti.uml.read.api._
 import org.omg.oti.uml.xmi.Document
 
 import scala.collection.immutable._
-import scala.{None, Option, Some, StringContext, Tuple2, Tuple3, Tuple4}
-import scala.Predef.{ArrowAssoc, String}
+import scala.{None, Option, Some, StringContext, Tuple4}
+import scala.Predef.String
 import scala.util.{Failure, Success, Try}
 import scala.reflect.runtime.universe._
 import scalaz._
@@ -85,7 +81,7 @@ import scalaz._
   */
 object ExportAsOTIMOFModels {
 
-  import Utils.{IterableSemigroup,VectorSemigroup,selectable}
+  import Utils.VectorSemigroup
 
   def doit
   ( p: Project, ev: ActionEvent,

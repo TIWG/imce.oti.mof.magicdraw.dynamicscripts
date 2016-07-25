@@ -45,7 +45,7 @@ import org.omg.oti.uml.read.api.{UMLClass, UMLDataType, UMLEnumeration, UMLPrimi
 import org.omg.oti.uml.UMLError
 
 import scala.collection.immutable.Iterable
-import scala.{AnyVal,None,Some,StringContext}
+import scala.{AnyVal,Some,StringContext}
 
 object OTIHelpers {
 

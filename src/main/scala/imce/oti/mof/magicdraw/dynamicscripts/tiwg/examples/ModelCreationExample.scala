@@ -43,8 +43,8 @@ import java.io.File
 import java.lang.System
 import java.nio.file.{Files,Path}
 
-import com.nomagic.magicdraw.core.{Application, ApplicationEnvironment, Project}
-import com.nomagic.magicdraw.core.project.{ProjectDescriptorsFactory, ProjectsManager}
+import com.nomagic.magicdraw.core.{Application, Project}
+import com.nomagic.magicdraw.core.project.ProjectDescriptorsFactory
 import com.nomagic.magicdraw.openapi.uml.SessionManager
 import gov.nasa.jpl.dynamicScripts.DynamicScriptsTypes.MainToolbarMenuAction
 import gov.nasa.jpl.dynamicScripts.magicdraw.utils.MDUML

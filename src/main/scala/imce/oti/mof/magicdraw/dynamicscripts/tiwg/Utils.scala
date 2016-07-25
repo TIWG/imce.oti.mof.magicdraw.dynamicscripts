@@ -69,8 +69,8 @@ import scala.collection.JavaConversions._
 import scala.collection.immutable._
 import scala.io.{Codec, Source}
 import scala.language.higherKinds
-import scala.{Boolean, Int, Long, None, Option, PartialFunction, Some, StringContext, Tuple2, Unit}
-import scala.Predef.{ArrowAssoc, String, augmentString, refArrayOps, require}
+import scala.{Int, Long, None, Option, PartialFunction, Some, StringContext, Tuple2, Unit}
+import scala.Predef.{String, augmentString}
 import scala.util.{Failure, Success, Try}
 import scala.util.control.Exception._
 import scalaz._

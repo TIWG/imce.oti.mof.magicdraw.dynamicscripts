@@ -38,12 +38,9 @@
  */
 package imce.oti.mof.magicdraw.dynamicscripts.tiwg
 
-import java.awt.event.ActionEvent
-import java.lang.System
-
 import com.nomagic.magicdraw.uml.UUIDRegistry
 import com.nomagic.uml2.ext.jmi.helpers.StereotypesHelper
-import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.{PrimitiveType, Element, ElementValue, InstanceValue}
+import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.PrimitiveType
 import com.nomagic.uml2.ext.magicdraw.mdprofiles.Stereotype
 import imce.oti.mof.magicdraw.dynamicscripts.transactions.MetamodelTransactionPropertyNameCache
 import org.omg.oti.magicdraw.uml.read.{MagicDrawUML, MagicDrawUMLElement}
@@ -52,14 +49,12 @@ import org.omg.oti.uml.characteristics.OTICharacteristicsProvider
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable._
-import scala.{Int, None, Option, Some, StringContext, Tuple2, Tuple3, Tuple4}
-import scala.Predef.ArrowAssoc
-import scala.util.{Failure, Success, Try}
+import scala.{None, Option, Some}
 import scalaz._
 
 object ModelElementAttributeValueExporter {
 
-  import Utils.{IterableSemigroup,VectorSemigroup,selectable}
+  import Utils.VectorSemigroup
 
   def toModelElementAttributeValues
   (e: MagicDrawUMLElement,

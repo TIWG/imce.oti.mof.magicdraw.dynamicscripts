@@ -41,27 +41,19 @@ package imce.oti.mof.magicdraw.dynamicscripts.transactions
 import java.beans.PropertyChangeEvent
 import java.lang.System
 
-import com.nomagic.magicdraw.core.ApplicationEnvironment
-import com.nomagic.magicdraw.utils.MDLog
-import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Element
 import com.nomagic.uml2.ext.magicdraw.metadata.UMLPackage
-import org.apache.log4j.Logger
-import org.eclipse.emf.common.util.TreeIterator
 import org.eclipse.emf.ecore._
-import org.apache.log4j.Logger
-import org.eclipse.emf.common.util.TreeIterator
 import org.eclipse.emf.ecore.EClass
 import org.eclipse.emf.ecore.EObject
 import org.eclipse.emf.ecore.EPackage
 import org.eclipse.emf.ecore.EReference
-import org.eclipse.emf.ecore.EStructuralFeature
 
 import imce.oti.mof.resolvers.UMLMetamodelResolver
 import org.omg.oti.mof.schema._
 
 import scala.collection.JavaConversions._
 import scala.collection.immutable._
-import scala.{Boolean, Int, None, Option, Ordering, Some, StringContext, Tuple2, Tuple3, Tuple4, Unit}
+import scala.{Int, None, Option, Ordering, Some, StringContext, Tuple2, Tuple3, Tuple4}
 import scala.Predef.{ArrowAssoc, String, augmentString, require}
 
 case class MetamodelTransactionPropertyNameCache

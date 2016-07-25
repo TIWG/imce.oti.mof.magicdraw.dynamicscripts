@@ -39,8 +39,6 @@
 package imce.oti.mof.magicdraw.dynamicscripts.tiwg
 
 import java.awt.event.ActionEvent
-import java.lang.System
-import java.util.concurrent.TimeUnit
 
 import com.nomagic.magicdraw.core.{Application, Project}
 import com.nomagic.magicdraw.ui.browser.{Node, Tree}
@@ -48,22 +46,19 @@ import com.nomagic.magicdraw.uml.symbols.shapes.PackageView
 import com.nomagic.magicdraw.uml.symbols.{DiagramPresentationElement, PresentationElement}
 import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Package
 import gov.nasa.jpl.dynamicScripts.DynamicScriptsTypes
-import gov.nasa.jpl.dynamicScripts.magicdraw.utils.MDUML
 import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataResults
-import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.utils.OTIHelper
-import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.validation.OTIMagicDrawValidation
 import org.omg.oti.json.common.OTIDocumentSetConfiguration
 import org.omg.oti.json.uml.serialization.OTIJsonSerializationHelper
-import org.omg.oti.magicdraw.uml.canonicalXMI.helper.{MagicDrawOTIDocumentSetAdapterForDataProvider, MagicDrawOTIHelper}
+import org.omg.oti.magicdraw.uml.canonicalXMI.helper.MagicDrawOTIDocumentSetAdapterForDataProvider
 import org.omg.oti.magicdraw.uml.read.{MagicDrawUML, MagicDrawUMLUtil}
 import org.omg.oti.mof.schema._
 import org.omg.oti.uml.read.api.{UMLElement, UMLPackage, UMLPrimitiveType}
 import org.omg.oti.uml.xmi.Document
 
 import scala.collection.immutable._
-import scala.{Boolean, Int, Long, None, Option, Some, StringContext, Unit}
-import scala.Predef.{ArrowAssoc, String, augmentString, refArrayOps}
-import scala.util.{Failure, Success, Try}
+import scala.{None, Option, StringContext}
+import scala.Predef.{ArrowAssoc, String}
+import scala.util.{Success, Try}
 import scalaz.Scalaz._
 import scalaz._
 

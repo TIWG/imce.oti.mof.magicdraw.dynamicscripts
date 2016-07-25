@@ -40,10 +40,9 @@ package imce.oti.mof.magicdraw.dynamicscripts.tiwg
 
 import com.nomagic.magicdraw.uml.UUIDRegistry
 import com.nomagic.uml2.ext.jmi.helpers.StereotypesHelper
-import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.{Class => MDClass, Element, ElementValue, InstanceValue}
+import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.{Class => MDClass, ElementValue, InstanceValue}
 import com.nomagic.uml2.ext.magicdraw.mdprofiles.Stereotype
 import imce.oti.mof.magicdraw.dynamicscripts.transactions.MetamodelTransactionPropertyNameCache
-import org.eclipse.emf.ecore.EReference
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper.MagicDrawOTIDocumentSetAdapterForDataProvider
 import org.omg.oti.magicdraw.uml.read.MagicDrawUMLElement
 import org.omg.oti.mof.schema._

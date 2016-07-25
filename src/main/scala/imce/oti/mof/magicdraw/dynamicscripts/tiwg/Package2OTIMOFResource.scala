@@ -40,11 +40,9 @@ package imce.oti.mof.magicdraw.dynamicscripts.tiwg
 
 import java.io.File
 import java.nio.file.Path
-import java.lang.System
 
 import com.nomagic.magicdraw.core.Project
 import imce.oti.mof.magicdraw.dynamicscripts.transactions.MetamodelTransactionPropertyNameCache
-import imce.oti.mof.resolvers.UMLMetamodelResolver
 import org.omg.oti.json.common.OTIPrimitiveTypes
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper.MagicDrawOTIDocumentSetAdapterForDataProvider
 import org.omg.oti.magicdraw.uml.read.MagicDrawUML
@@ -54,7 +52,7 @@ import org.omg.oti.uml.xmi.Document
 import play.api.libs.json._
 
 import scala.collection.immutable._
-import scala.{Int, None, Option, Some, StringContext, Tuple2, Tuple4, Unit}
+import scala.{StringContext, Tuple2, Unit}
 import scala.Predef.{String, augmentString, require}
 import scala.util.control.Exception._
 import scalaz._

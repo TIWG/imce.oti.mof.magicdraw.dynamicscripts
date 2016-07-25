@@ -40,24 +40,18 @@ package imce.oti.mof.magicdraw.dynamicscripts.tiwg
 
 import java.awt.event.ActionEvent
 import java.lang.System
-import java.util.concurrent.TimeUnit
 
 import com.nomagic.magicdraw.core.{Application, Project}
 import com.nomagic.magicdraw.ui.browser.{Node, Tree}
 import com.nomagic.magicdraw.uml.symbols.shapes.PackageView
 import com.nomagic.magicdraw.uml.symbols.{DiagramPresentationElement, PresentationElement}
 import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Package
-import com.nomagic.uml2.ext.magicdraw.mdprofiles.Profile
 import gov.nasa.jpl.dynamicScripts.DynamicScriptsTypes
-import gov.nasa.jpl.dynamicScripts.magicdraw.utils.MDUML
 import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataResults
-import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.utils.OTIHelper
-import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.validation.OTIMagicDrawValidation
 
 import imce.oti.mof.resolvers.OTIHelpers._
 
 import org.omg.oti.json.common.OTIDocumentSetConfiguration
-import org.omg.oti.json.uml.serialization.OTIJsonSerializationHelper
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper._
 import org.omg.oti.magicdraw.uml.read.MagicDrawUML
 import org.omg.oti.mof.schema._
@@ -65,9 +59,8 @@ import org.omg.oti.uml.read.api._
 import org.omg.oti.uml.xmi.Document
 
 import scala.collection.immutable._
-import scala.io.{Codec, Source}
-import scala.{Boolean, Int, Long, None, Option, Some, StringContext, Tuple3, Unit}
-import scala.Predef.{augmentString, refArrayOps, require, ArrowAssoc}
+import scala.{Int, None, Option, Some, StringContext}
+import scala.Predef.require
 import scala.util.{Failure, Success, Try}
 import scalaz._
 
