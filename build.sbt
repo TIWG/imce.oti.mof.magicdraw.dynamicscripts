@@ -192,21 +192,21 @@ lazy val core = Project("imce-oti-mof-magicdraw-dynamicscripts", file("."))
                 s"files extracted from zip: ${zip.getName}")
           }
 
-//          val mdDynamicScriptsDir = mdInstallDir / "dynamicScripts"
-//          IO.createDirectory(mdDynamicScriptsDir)
-//
-//          val zfilter: DependencyFilter = new DependencyFilter {
-//            def apply(c: String, m: ModuleID, a: Artifact): Boolean =
-//              (a.`type` == "zip" || a.`type` == "resource") &&
-//                a.extension == "zip" &&
-//                m.organization == "org.omg.tiwg"
-//          }
-//          val zs: Seq[File] = up.matching(zfilter)
-//          zs.foreach { zip =>
-//            val files = IO.unzip(zip, mdDynamicScriptsDir)
-//            s.log.info(
-//              s"=> extracted ${files.size} DynamicScripts files from zip: ${zip.getName}")
-//          }
+          val mdDynamicScriptsDir = mdInstallDir / "dynamicScripts"
+          IO.createDirectory(mdDynamicScriptsDir)
+
+          val zfilter: DependencyFilter = new DependencyFilter {
+            def apply(c: String, m: ModuleID, a: Artifact): Boolean =
+              (a.`type` == "zip" || a.`type` == "resource") &&
+                a.extension == "zip" &&
+                m.organization == "org.omg.tiwg"
+          }
+          val zs: Seq[File] = up.matching(zfilter)
+          zs.foreach { zip =>
+            val files = IO.unzip(zip, mdDynamicScriptsDir)
+            s.log.info(
+              s"=> extracted ${files.size} DynamicScripts files from zip: ${zip.getName}")
+          }
 
         } else
           s.log.info(
@@ -221,11 +221,10 @@ lazy val core = Project("imce-oti-mof-magicdraw-dynamicscripts", file("."))
         val libJars = ((mdInstallDir / "lib") ** "*.jar").get
         s.log.info(s"jar libraries: ${libJars.size}")
 
-//        val dsJars = ((mdInstallDir / "dynamicScripts") * "*" / "lib" ** "*.jar").get
-//        s.log.info(s"jar dynamic script: ${dsJars.size}")
-//
-//        val mdJars = (libJars ++ dsJars).map { jar => Attributed.blank(jar) }
-        val mdJars = libJars.map { jar => Attributed.blank(jar) }
+        val dsJars = ((mdInstallDir / "dynamicScripts") * "*" / "lib" ** "*.jar").get
+        s.log.info(s"jar dynamic script: ${dsJars.size}")
+
+        val mdJars = (libJars ++ dsJars).map { jar => Attributed.blank(jar) }
 
         mdJars
     },
