@@ -2,7 +2,7 @@
 .idea
 *~
 *.bak
-off.links.json
+*links.json
 project/project
 project/target
 resources/UML

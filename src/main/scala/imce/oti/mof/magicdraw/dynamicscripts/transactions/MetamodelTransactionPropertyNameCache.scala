@@ -77,7 +77,16 @@ case class MetamodelTransactionPropertyNameCache
   metaclassReferenceAssociationReverseProperties
   : Map[EClass, Map[String, Tuple3[views.AssociationInfo, EReference, EReference]]],
 
-  metaclassAttributes
+  metaclassOrderedAtomicAttributes
+  : Map[EClass, Map[String, Tuple2[features.DataTypedAttributeProperty, EAttribute]]],
+
+  metaclassOrderedEnumerationAttributes
+  : Map[EClass, Map[String, Tuple2[features.DataTypedAttributeProperty, EAttribute]]],
+
+  metaclassUnorderedAtomicAttributes
+  : Map[EClass, Map[String, Tuple2[features.DataTypedAttributeProperty, EAttribute]]],
+
+  metaclassUnorderedEnumerationAttributes
   : Map[EClass, Map[String, Tuple2[features.DataTypedAttributeProperty, EAttribute]]]) {
 
   def lookupContainmentPropertyChangeEvent(ev: PropertyChangeEvent)
@@ -216,12 +225,48 @@ object MetamodelTransactionPropertyNameCache {
         }
     }
 
-    val metaclassAttributes
+    val metaclassOrderedAtomicAttributes
     : Map[EClass, Map[String, Tuple2[features.DataTypedAttributeProperty, EAttribute]]]
     = metaclasses
       .map { mc =>
         val tuples = for {
-          attrib <- umlMM.mc2AllAttributes.getOrElse(mc.getName, Set.empty[features.DataTypedAttributeProperty])
+          attrib <- umlMM.mc2AllOrderedAtomicAttributes.getOrElse(mc.getName, Set.empty[features.DataTypedAttributeProperty])
+          a <- mc.getEAllAttributes.find ( attrib.name.value == _.getName )
+        } yield a.getName -> Tuple2(attrib, a)
+        mc -> tuples.toMap
+      }
+      .toMap
+
+    val metaclassOrderedEnumerationAttributes
+    : Map[EClass, Map[String, Tuple2[features.DataTypedAttributeProperty, EAttribute]]]
+    = metaclasses
+      .map { mc =>
+        val tuples = for {
+          attrib <- umlMM.mc2AllOrderedEnumerationAttributes.getOrElse(mc.getName, Set.empty[features.DataTypedAttributeProperty])
+          a <- mc.getEAllAttributes.find ( attrib.name.value == _.getName )
+        } yield a.getName -> Tuple2(attrib, a)
+        mc -> tuples.toMap
+      }
+      .toMap
+
+    val metaclassUnorderedAtomicAttributes
+    : Map[EClass, Map[String, Tuple2[features.DataTypedAttributeProperty, EAttribute]]]
+    = metaclasses
+      .map { mc =>
+        val tuples = for {
+          attrib <- umlMM.mc2AllUnorderedAtomicAttributes.getOrElse(mc.getName, Set.empty[features.DataTypedAttributeProperty])
+          a <- mc.getEAllAttributes.find ( attrib.name.value == _.getName )
+        } yield a.getName -> Tuple2(attrib, a)
+        mc -> tuples.toMap
+      }
+      .toMap
+
+    val metaclassUnorderedEnumerationAttributes
+    : Map[EClass, Map[String, Tuple2[features.DataTypedAttributeProperty, EAttribute]]]
+    = metaclasses
+      .map { mc =>
+        val tuples = for {
+          attrib <- umlMM.mc2AllUnorderedEnumerationAttributes.getOrElse(mc.getName, Set.empty[features.DataTypedAttributeProperty])
           a <- mc.getEAllAttributes.find ( attrib.name.value == _.getName )
         } yield a.getName -> Tuple2(attrib, a)
         mc -> tuples.toMap
@@ -444,10 +489,13 @@ object MetamodelTransactionPropertyNameCache {
           from.getName -> Tuple3(view, from, to)
         }.toMap
       },
-      metaclassAttributes)
+      metaclassOrderedAtomicAttributes,
+      metaclassOrderedEnumerationAttributes,
+      metaclassUnorderedAtomicAttributes,
+      metaclassUnorderedEnumerationAttributes)
 
-    System.out.println(s"\nComposite association pairs: ${allCompositePairs.size}")
-    System.out.println(s"Reference association pairs: ${allReferencePairs.size}\n")
+    System.out.println(s"\nMetamodel Composite association pairs: ${allCompositePairs.size}")
+    System.out.println(s"Metamodel Reference association pairs: ${allReferencePairs.size}\n")
 
     cache
   }

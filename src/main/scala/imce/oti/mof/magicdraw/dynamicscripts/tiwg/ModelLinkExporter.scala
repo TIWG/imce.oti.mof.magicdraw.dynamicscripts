@@ -53,83 +53,146 @@ import scala.Predef.String
 
 object ModelLinkExporter {
 
-  def toModelLinks
-  (odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
+  def toOrderedLinks
+  (resource: common.ResourceIRI,
+   odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
    cache: MetamodelTransactionPropertyNameCache)
   (e: MagicDrawUMLElement)
-  : Vector[model.ModelLink]
+  : Iterable[tables.model.OTIMOFModelOrderedLink]
   = {
     val mdE = e.getMagicDrawElement
     val sourceUUID = common.EntityUUID(UUIDRegistry.getUUID(mdE))
     val mdMC = mdE.eClass
 
     val compositeLinks
-    : Iterable[model.ModelLink]
+    : Iterable[tables.model.OTIMOFModelOrderedLink]
     = cache
       .metaclassContainmentAssociationForwardProperties
       .getOrElse(mdMC, Map.empty[String, (views.AssociationInfo, EReference, EReference)])
       .flatMap { case (propertyName, (assoc, sourceRef, targetRef)) =>
 
         val links
-        : Iterable[model.ModelLink]
+        : Iterable[tables.model.OTIMOFModelOrderedLink]
         = mdE.eGet(sourceRef) match {
           case refs: java.util.Collection[_] =>
             if (assoc.isOrdered)
               refs.toList.zipWithIndex.map { case (r: Element, i: Int) =>
-                model.ModelOrderedLink(
+                tables.model.OTIMOFModelOrderedLink(
+                  resource,
                   sourceElement = sourceUUID,
                   targetElement = common.EntityUUID(UUIDRegistry.getUUID(r)),
                   metaAssociation = assoc.uuid,
                   index = i)
               }
             else
-              refs.toList.map { case r: Element =>
-                model.ModelUnorderedLink(
-                  sourceElement = sourceUUID,
-                  targetElement = common.EntityUUID(UUIDRegistry.getUUID(r)),
-                  metaAssociation = assoc.uuid)
-              }
+              Iterable.empty
           case _ =>
-            Iterable.empty[model.ModelLink]
+            Iterable.empty
         }
 
         links
       }
 
     val referenceLinks
-    : Iterable[model.ModelLink]
+    : Iterable[tables.model.OTIMOFModelOrderedLink]
     = cache
       .metaclassReferenceAssociationForwardProperties
       .getOrElse(mdMC, Map.empty[String, (views.AssociationInfo, EReference, EReference)])
       .flatMap { case (propertyName, (assoc, sourceRef, targetRef)) =>
 
         val links
-        : Iterable[model.ModelLink]
+        : Iterable[tables.model.OTIMOFModelOrderedLink]
         = mdE.eGet(sourceRef) match {
           case refs: java.util.Collection[_] =>
             if (assoc.isOrdered)
               refs.toList.zipWithIndex.map { case (r: Element, i: Int) =>
-                model.ModelOrderedLink(
+                tables.model.OTIMOFModelOrderedLink(
+                  resource,
                   sourceElement = sourceUUID,
                   targetElement = common.EntityUUID(UUIDRegistry.getUUID(r)),
                   metaAssociation = assoc.uuid,
                   index = i)
               }
             else
-              refs.toList.map { case r: Element =>
-                model.ModelUnorderedLink(
-                  sourceElement = sourceUUID,
-                  targetElement = common.EntityUUID(UUIDRegistry.getUUID(r)),
-                  metaAssociation = assoc.uuid)
-              }
+              Iterable.empty
           case _ =>
-            Iterable.empty[model.ModelLink]
+            Iterable.empty
         }
 
         links
       }
 
-    (compositeLinks ++ referenceLinks).toVector
+    compositeLinks ++ referenceLinks
+  }
+
+  def toUnorderedLinks
+  (resource: common.ResourceIRI,
+   odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
+   cache: MetamodelTransactionPropertyNameCache)
+  (e: MagicDrawUMLElement)
+  : Iterable[tables.model.OTIMOFModelUnorderedLink]
+  = {
+    val mdE = e.getMagicDrawElement
+    val sourceUUID = common.EntityUUID(UUIDRegistry.getUUID(mdE))
+    val mdMC = mdE.eClass
+
+    val compositeLinks
+    : Iterable[tables.model.OTIMOFModelUnorderedLink]
+    = cache
+      .metaclassContainmentAssociationForwardProperties
+      .getOrElse(mdMC, Map.empty[String, (views.AssociationInfo, EReference, EReference)])
+      .flatMap { case (propertyName, (assoc, sourceRef, targetRef)) =>
+
+        val links
+        : Iterable[tables.model.OTIMOFModelUnorderedLink]
+        = mdE.eGet(sourceRef) match {
+          case refs: java.util.Collection[_] =>
+            if (assoc.isOrdered)
+              Iterable.empty
+            else
+              refs.toList.map { case r: Element =>
+                tables.model.OTIMOFModelUnorderedLink(
+                  resource,
+                  sourceElement = sourceUUID,
+                  targetElement = common.EntityUUID(UUIDRegistry.getUUID(r)),
+                  metaAssociation = assoc.uuid)
+              }
+          case _ =>
+            Iterable.empty
+        }
+
+        links
+      }
+
+    val referenceLinks
+    : Iterable[tables.model.OTIMOFModelUnorderedLink]
+    = cache
+      .metaclassReferenceAssociationForwardProperties
+      .getOrElse(mdMC, Map.empty[String, (views.AssociationInfo, EReference, EReference)])
+      .flatMap { case (propertyName, (assoc, sourceRef, targetRef)) =>
+
+        val links
+        : Iterable[tables.model.OTIMOFModelUnorderedLink]
+        = mdE.eGet(sourceRef) match {
+          case refs: java.util.Collection[_] =>
+            if (assoc.isOrdered)
+              Iterable.empty
+            else
+              refs.toList.map { case r: Element =>
+                tables.model.OTIMOFModelUnorderedLink(
+                  resource,
+                  sourceElement = sourceUUID,
+                  targetElement = common.EntityUUID(UUIDRegistry.getUUID(r)),
+                  metaAssociation = assoc.uuid)
+              }
+          case _ =>
+            Iterable.empty
+        }
+
+        links
+      }
+
+    compositeLinks ++ referenceLinks
   }
 
 }

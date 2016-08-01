@@ -70,7 +70,22 @@ case class UMLMetamodelResolver
  mcName2UUID
  : Map[String, common.EntityUUID],
 
- mc2AllAttributes
+ mc2AllOrderedAtomicAttributes
+ : Map[String, Set[features.DataTypedAttributeProperty]],
+
+ mc2AllOrderedEnumerationAttributes
+ : Map[String, Set[features.DataTypedAttributeProperty]],
+
+ mc2AllOrderedStructuredAttributes
+ : Map[String, Set[features.DataTypedAttributeProperty]],
+
+ mc2AllUnorderedAtomicAttributes
+ : Map[String, Set[features.DataTypedAttributeProperty]],
+
+ mc2AllUnorderedEnumerationAttributes
+ : Map[String, Set[features.DataTypedAttributeProperty]],
+
+ mc2AllUnorderedStructuredAttributes
  : Map[String, Set[features.DataTypedAttributeProperty]])
 
 object UMLMetamodelResolver {
@@ -164,16 +179,32 @@ object UMLMetamodelResolver {
     = mc2DirectSpecializations
       .getOrElse(mc, Set.empty[metamodel.MetaClass])
 
-    val mcName2UUID
-    : Map[String, common.EntityUUID]
-    = metaclasses.map { mc =>
-      mc.name.value -> mc.uuid
-    }.toMap
-
-    val mc2DirectAttributes
+    def mc2AllAttributes
+    (mc2DirectAttributes: Map[metamodel.MetaClass, Set[features.DataTypedAttributeProperty]])
     : Map[metamodel.MetaClass, Set[features.DataTypedAttributeProperty]]
-    = umlR
-      .metaclass2attribute
+    = metaclasses
+      .to[Set]
+      .foldLeft(Map.empty[metamodel.MetaClass, Set[features.DataTypedAttributeProperty]]) {
+        case (acc: Map[metamodel.MetaClass, Set[features.DataTypedAttributeProperty]],
+        mc: metamodel.MetaClass) =>
+
+          val mcAttribs = mc2DirectAttributes.getOrElse(mc, Set.empty[features.DataTypedAttributeProperty])
+
+          def combine
+          (current: Map[metamodel.MetaClass, Set[features.DataTypedAttributeProperty]],
+           s: metamodel.MetaClass)
+          : Map[metamodel.MetaClass, Set[features.DataTypedAttributeProperty]]
+          = current
+            .updated(s,
+              mcAttribs ++ current.getOrElse(s, Set.empty[features.DataTypedAttributeProperty]))
+
+          transitiveClosure(mc, acc)(getSpecializedMetaclasses, combine)
+      }
+
+    def mc2Attributes
+    (attributeMap: Vector[metamodel.MetaClass2Attribute])
+    : Map[metamodel.MetaClass, Set[features.DataTypedAttributeProperty]]
+    = attributeMap
       .flatMap { mc2attrib =>
         for {
 
@@ -190,27 +221,16 @@ object UMLMetamodelResolver {
       .groupBy(_._1)
       .map { case (mc, m2a) => mc -> m2a.map(_._2).to[Set] }
 
+    def mc2AllNamedAttributes
+    (attributeMap: Vector[metamodel.MetaClass2Attribute])
+    : Map[String, Set[features.DataTypedAttributeProperty]]
+    = mc2AllAttributes(mc2Attributes(attributeMap)).map { case (s, as) => s.name.value -> as }
 
-    val mc2AllAttributes
-    : Map[metamodel.MetaClass, Set[features.DataTypedAttributeProperty]]
-    = metaclasses
-      .to[Set]
-      .foldLeft(Map.empty[metamodel.MetaClass, Set[features.DataTypedAttributeProperty]]) {
-        case (acc: Map[metamodel.MetaClass, Set[features.DataTypedAttributeProperty]],
-              mc: metamodel.MetaClass) =>
-
-          val mcAttribs = mc2DirectAttributes.getOrElse(mc, Set.empty[features.DataTypedAttributeProperty])
-
-          def combine
-          (current: Map[metamodel.MetaClass, Set[features.DataTypedAttributeProperty]],
-           s: metamodel.MetaClass)
-          : Map[metamodel.MetaClass, Set[features.DataTypedAttributeProperty]]
-          = current
-            .updated(s,
-              mcAttribs ++ current.getOrElse(s, Set.empty[features.DataTypedAttributeProperty]))
-
-          transitiveClosure(mc, acc)(getSpecializedMetaclasses, combine)
-      }
+    val mcName2UUID
+    : Map[String, common.EntityUUID]
+    = metaclasses.map { mc =>
+      mc.name.value -> mc.uuid
+    }.toMap
 
     UMLMetamodelResolver(primitiveTypesR, umlR,
       metaclasses,
@@ -219,7 +239,12 @@ object UMLMetamodelResolver {
       mc2DirectGeneralizations,
       mc2DirectSpecializations,
       mcName2UUID,
-      mc2AllAttributes.map { case (s, as) => s.name.value -> as })
+      mc2AllOrderedAtomicAttributes = mc2AllNamedAttributes(umlR.metaclass2orderedAtomicAttribute),
+      mc2AllOrderedEnumerationAttributes = mc2AllNamedAttributes(umlR.metaclass2orderedEnumerationAttribute),
+      mc2AllOrderedStructuredAttributes = mc2AllNamedAttributes(umlR.metaclass2orderedStructuredAttribute),
+      mc2AllUnorderedAtomicAttributes = mc2AllNamedAttributes(umlR.metaclass2unorderedAtomicAttribute),
+      mc2AllUnorderedEnumerationAttributes = mc2AllNamedAttributes(umlR.metaclass2unorderedEnumerationAttribute),
+      mc2AllUnorderedStructuredAttributes = mc2AllNamedAttributes(umlR.metaclass2unorderedStructuredAttribute))
   }
 
   def transitiveClosure[E, V]

@@ -38,7 +38,7 @@
  */
 package imce.oti.mof.magicdraw.dynamicscripts.tiwg
 
-import java.io.File
+//import java.io.File
 import java.nio.file.Path
 import java.lang.System
 
@@ -50,12 +50,12 @@ import org.omg.oti.mof.schema._
 import org.omg.oti.uml.read.api._
 import org.omg.oti.uml.xmi.Document
 
-import play.api.libs.json._
+//import play.api.libs.json._
 
 import scala.collection.immutable._
-import scala.{Int, None, Some, StringContext, Tuple2, Tuple4, Unit}
-import scala.Predef.{augmentString,require,String}
-import scala.util.control.Exception._
+import scala.{Int, None, Some, StringContext, Tuple4}
+//import scala.Predef.{augmentString,require,String}
+//import scala.util.control.Exception._
 import scalaz._
 
 object Profile2OTIMOFResource {
@@ -66,7 +66,7 @@ object Profile2OTIMOFResource {
    resolver: UMLMetamodelResolver,
    pf: UMLProfile[MagicDrawUML],
    d: Document[MagicDrawUML])
-  : Vector[java.lang.Throwable] \&/ (Document[MagicDrawUML], OTIMOFProfileResourceExtent)
+  : Vector[java.lang.Throwable] \&/ Vector[OTIMOFProfileTables]
   = {
     implicit val ops = odsa.otiAdapter.umlOps
 
@@ -148,25 +148,27 @@ object Profile2OTIMOFResource {
       }
     }
 
+    val profileIRI = d.toOTIMOFResourceIRI
+
     val exported
-    : Vector[java.lang.Throwable] \&/ OTIMOFProfileResourceExtent
+    : Vector[java.lang.Throwable] \&/ Vector[OTIMOFProfileTables]
     = for {
-      s2mc <- ExportAsOTIMOFProfiles.getStereotype2ExtendedMetaclasses(ss, resolver.umlR)
-      ext = OTIMOFProfileResourceExtent(
-        resource = OTIMOFProfile(d.toOTIMOFResourceIRI),
-        extendedMetamodels = Vector(profile.Profile2ExtendedMetamodel(
-          extendedMetamodel = resolver.umlR.resource.iri,
-          extendingProfile = d.toOTIMOFResourceIRI)),
+      s2mc <- ExportAsOTIMOFProfiles.getStereotype2ExtendedMetaclasses(profileIRI, ss, resolver.umlR)
+      ext = OTIMOFProfileTables(
+        resourceType = Iterable(tables.OTIMOFResourceType(resource=profileIRI, kind=tables.OTIMOFResourceProfileKind)),
+        extendedMetamodels = Iterable(tables.profile.OTIMOFProfile2ExtendedMetamodel(
+          resource = profileIRI,
+          extendedMetamodel = resolver.umlR.resource.iri)),
         importedProfiles = pf.packageImport.toVector.flatMap { pi =>
           pi.importedPackage match {
             case Some(ipf: UMLProfile[MagicDrawUML]) =>
               odsa.ds.lookupDocumentByScope(ipf) match {
                 case Some(dipf) =>
                   Some(OTIMOFResourceProfileImport(
-                    importingProfile = d.toOTIMOFResourceIRI,
+                    importingProfile = profileIRI,
                     importedProfile = common.ResourceIRI(OTIPrimitiveTypes.OTI_URI.unwrap(dipf.info.packageURI))))
                 case _ =>
-                  java.lang.System.out.println(
+                  System.out.println(
                     s"Profile `${pf.qualifiedName.get}` imports " +
                       s"a profile without a known OTI Document PackageURI: `${ipf.qualifiedName.get}`")
                   None
@@ -175,135 +177,121 @@ object Profile2OTIMOFResource {
               None
           }
         },
-        classifiers = ss.map { s =>
-          profile.Stereotype(
+        importedLibraries = Iterable.empty[OTIMOFResourceLibraryImport], // @TODO
+        stereotypes = ss.map { s =>
+          tables.profile.OTIMOFStereotype(
+            resource = profileIRI,
             uuid = s.toOTIMOFEntityUUID,
             name = common.Name(s.name.get))
         },
-        associationTargetEnds = sms.map { case (_, p, _) =>
-          if (p.isComposite)
-            features.AssociationTargetCompositeEnd(
-              uuid = p.toOTIMOFEntityUUID,
-              name = common.Name(p.name.get))
-          else
-            features.AssociationTargetReferenceEnd(
-              uuid = p.toOTIMOFEntityUUID,
-              name = common.Name(p.name.get))
-        } ++ sss.map { case (_, p, _) =>
-          if (p.isComposite)
-            features.AssociationTargetCompositeEnd(
-              uuid = p.toOTIMOFEntityUUID,
-              name = common.Name(p.name.get))
-          else
-            features.AssociationTargetReferenceEnd(
-              uuid = p.toOTIMOFEntityUUID,
-              name = common.Name(p.name.get))
-        },
+
         generalizations = ss.flatMap { s =>
           s.general_classifier.flatMap {
             case sp: UMLStereotype[MagicDrawUML] =>
-              Some(profile.StereotypeGeneralization(
+              Some(tables.profile.OTIMOFStereotypeGeneralization(
+                resource = profileIRI,
                 general = s.toOTIMOFEntityUUID,
                 specific = sp.toOTIMOFEntityUUID))
             case _ =>
               None
           }
         },
+        extendedMetaclasses = s2mc,
+        stereotypeAttributes = sas.map { case (s, f, _, i) =>
+          tables.profile.OTIMOFStereotype2Attribute(
+            resource = profileIRI,
+            stereotype = s.toOTIMOFEntityUUID,
+            attribute = f.toOTIMOFEntityUUID,
+            index = i)
+        },
+        stereotype2MetaClassProperty = sms.map { case (s, f, mcUUID) =>
+          tables.profile.OTIMOFStereotypeAssociationTargetEndMetaClassProperty(
+            resource = profileIRI,
+            sourceStereotype = s.toOTIMOFEntityUUID,
+            associationTargetEnd = f.toOTIMOFEntityUUID,
+            targetMetaClass = mcUUID)
+        },
+        stereotype2StereotypeProperty = sss.map { case (s, f, st) =>
+          tables.profile.OTIMOFStereotypeAssociationTargetEndStereotypeProperty(
+            resource = profileIRI,
+            sourceStereotype = s.toOTIMOFEntityUUID,
+            associationTargetEnd = f.toOTIMOFEntityUUID,
+            targetStereotype = st.toOTIMOFEntityUUID)
+        },
+        associationTargetEnds = sms.map { case (_, p, _) =>
+          if (p.isComposite)
+            features.AssociationTargetCompositeEnd(
+              resource = profileIRI,
+              uuid = p.toOTIMOFEntityUUID,
+              name = common.Name(p.name.get))
+          else
+            features.AssociationTargetReferenceEnd(
+              resource = profileIRI,
+              uuid = p.toOTIMOFEntityUUID,
+              name = common.Name(p.name.get))
+        } ++ sss.map { case (_, p, _) =>
+          if (p.isComposite)
+            features.AssociationTargetCompositeEnd(
+              resource = profileIRI,
+              uuid = p.toOTIMOFEntityUUID,
+              name = common.Name(p.name.get))
+          else
+            features.AssociationTargetReferenceEnd(
+              resource = profileIRI,
+              uuid = p.toOTIMOFEntityUUID,
+              name = common.Name(p.name.get))
+        },
         attributes = sas.map { case (_, f, _, _) =>
           features.DataTypedAttributeProperty(
+            resource = profileIRI,
             uuid = f.toOTIMOFEntityUUID,
             name = common.Name(f.name.get))
         },
         featureLowerBounds = sas.map { case (_, f, _, _) =>
           features.FeatureLowerBound(
+            resource = profileIRI,
             feature = f.toOTIMOFEntityUUID,
             lower = common.NonNegativeInt(f.lower.intValue()))
         } ++ (sms ++ sss).map { case (_, f, _) =>
           features.FeatureLowerBound(
+            resource = profileIRI,
             feature = f.toOTIMOFEntityUUID,
             lower = common.NonNegativeInt(f.lower.intValue()))
         },
         featureUpperBounds = sas.map { case (_, f, _, _) =>
           features.FeatureUpperBound(
+            resource = profileIRI,
             feature = f.toOTIMOFEntityUUID,
             upper = common.UnlimitedNatural(f.upper.intValue()))
         } ++ (sms ++ sss).map { case (_, f, _) =>
           features.FeatureUpperBound(
+            resource = profileIRI,
             feature = f.toOTIMOFEntityUUID,
             upper = common.UnlimitedNatural(f.upper.intValue()))
         },
         featureOrdering = sas.map { case (_, f, _, _) =>
           features.FeatureOrdering(
+            resource = profileIRI,
             feature = f.toOTIMOFEntityUUID,
             isOrdered = f.isOrdered)
         } ++ (sms ++ sss).map { case (_, f, _) =>
           features.FeatureOrdering(
+            resource = profileIRI,
             feature = f.toOTIMOFEntityUUID,
             isOrdered = f.isOrdered)
         },
-        extendedMetaclass = s2mc,
-        stereotype2attribute = sas.map { case (s, f, _, i) =>
-          profile.Stereotype2Attribute(
-            stereotype = s.toOTIMOFEntityUUID,
-            attribute = f.toOTIMOFEntityUUID,
-            index = i)
-        },
         attribute2type = sas.map { case (_, f, dtUUID, _) =>
           features.AttributeProperty2DataType(
+            resource = profileIRI,
             attribute = f.toOTIMOFEntityUUID,
             `type` = dtUUID)
-        },
-        stereotype2associationEndMetaClassProperty = sms.map { case (s, f, mcUUID) =>
-          profile.StereotypeAssociationTargetEndMetaClassProperty(
-            sourceStereotype = s.toOTIMOFEntityUUID,
-            associationTargetEnd = f.toOTIMOFEntityUUID,
-            targetMetaClass = mcUUID)
-        },
-        stereotype2associationEndStereotypeProperty = sss.map { case (s, f, st) =>
-          profile.StereotypeAssociationTargetEndStereotypeProperty(
-            sourceStereotype = s.toOTIMOFEntityUUID,
-            associationTargetEnd = f.toOTIMOFEntityUUID,
-            targetStereotype = st.toOTIMOFEntityUUID)
         })
     } yield {
       System.out.println(s"Extent: ${d.info.packageURI}")
-      ext
+      Vector(ext)
     }
 
-    import Utils.VectorSemigroup
-
-    exported.flatMap { pfResourceExtent: OTIMOFProfileResourceExtent =>
-
-      catching(nonFatalCatcher)
-        .either({
-
-          val uriSuffix: String = OTIPrimitiveTypes.OTI_URI.unwrap(d.info.packageURI).stripPrefix("http://")
-          val uriRelpath = (if (uriSuffix.endsWith("/")) uriSuffix else uriSuffix + "/").replace('/', File.separatorChar)
-          val pfDir = resultDir.resolve(uriRelpath)
-          require(pfDir.toFile.mkdirs(),
-            s"Failed to create the directory for profile: ${pf.qualifiedName.get} with URI=${d.info.packageURI}" +
-              s" (directory=$pfDir)")
-
-          val pfFile = pfDir.resolve("profile.json").toFile
-
-          val fos = new java.io.FileOutputStream(pfFile)
-          val pw = new java.io.PrintWriter(fos)
-
-          try {
-            val pfResourceJson = Json.toJson(pfResourceExtent)
-            pw.println(Json.prettyPrint(pfResourceJson))
-
-          } finally {
-            pw.close()
-            fos.close()
-          }
-
-        })
-        .fold[Vector[java.lang.Throwable] \&/ (Document[MagicDrawUML], OTIMOFProfileResourceExtent)](
-        (error: java.lang.Throwable) => \&/.This(Vector(error)),
-        (_: Unit) => \&/.That(Tuple2(d, pfResourceExtent))
-      )
-    }
+    exported
   }
 
 }

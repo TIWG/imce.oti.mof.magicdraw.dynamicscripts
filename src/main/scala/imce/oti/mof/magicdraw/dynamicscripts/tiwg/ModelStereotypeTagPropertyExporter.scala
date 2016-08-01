@@ -53,18 +53,19 @@ import scala.{Int, None, Option, Some}
 
 object ModelStereotypeTagPropertyExporter {
 
-  def toTagValue
-  (odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
+  def toOrderedReferences
+  (resource: common.ResourceIRI,
+   odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
    cache: MetamodelTransactionPropertyNameCache)
   (e: MagicDrawUMLElement)
-  : Vector[model.AppliedStereotypePropertyReference]
+  : Iterable[tables.model.OTIMOFAppliedStereotypePropertyOrderedReference]
   = {
     val mdE = e.getMagicDrawElement
     val sourceUUID = common.EntityUUID(UUIDRegistry.getUUID(mdE))
     val mdMC = mdE.eClass
 
     val tagValues
-    : Iterable[model.AppliedStereotypePropertyReference]
+    : Iterable[tables.model.OTIMOFAppliedStereotypePropertyOrderedReference]
     = for {
       is <- Option.apply(mdE.getAppliedStereotypeInstance).to[Iterable]
       appliedStereotypes = is.getClassifier.flatMap {
@@ -85,40 +86,90 @@ object ModelStereotypeTagPropertyExporter {
         .exists { s => f == StereotypesHelper.getPropertyByName(s, f.getName) }
       tagValue <- {
         val tagValues
-        : Iterable[model.AppliedStereotypePropertyReference]
+        : Iterable[tables.model.OTIMOFAppliedStereotypePropertyOrderedReference]
         = if (f.isOrdered)
           slot.getValue.toList.zipWithIndex.map {
             case (ev: ElementValue, i: Int) =>
-              model.AppliedStereotypePropertyOrderedReference(
+              tables.model.OTIMOFAppliedStereotypePropertyOrderedReference(
+                resource,
                 modelElement = sourceUUID,
                 associationTargetEnd = common.EntityUUID(UUIDRegistry.getUUID(f)),
                 referencedElement = common.EntityUUID(UUIDRegistry.getUUID(ev.getElement)),
                 index = i)
             case (iv: InstanceValue, i: Int) =>
-              model.AppliedStereotypePropertyOrderedReference(
+              tables.model.OTIMOFAppliedStereotypePropertyOrderedReference(
+                resource,
                 modelElement = sourceUUID,
                 associationTargetEnd = common.EntityUUID(UUIDRegistry.getUUID(f)),
                 referencedElement = common.EntityUUID(UUIDRegistry.getUUID(iv.getInstance)),
                 index = i)
           }
         else
-          slot.getValue.toList.map {
-            case (ev: ElementValue) =>
-              model.AppliedStereotypePropertyUnorderedReference(
-                modelElement = sourceUUID,
-                associationTargetEnd = common.EntityUUID(UUIDRegistry.getUUID(f)),
-                referencedElement = common.EntityUUID(UUIDRegistry.getUUID(ev.getElement)))
-            case (iv: InstanceValue) =>
-              model.AppliedStereotypePropertyUnorderedReference(
-                modelElement = sourceUUID,
-                associationTargetEnd = common.EntityUUID(UUIDRegistry.getUUID(f)),
-                referencedElement = common.EntityUUID(UUIDRegistry.getUUID(iv.getInstance)))
-          }
+          Iterable.empty
         tagValues
       }
     } yield tagValue
 
-    tagValues.toVector
+    tagValues
+  }
+
+  def toUnorderedReferences
+  (resource: common.ResourceIRI,
+   odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
+   cache: MetamodelTransactionPropertyNameCache)
+  (e: MagicDrawUMLElement)
+  : Iterable[tables.model.OTIMOFAppliedStereotypePropertyUnorderedReference]
+  = {
+    val mdE = e.getMagicDrawElement
+    val sourceUUID = common.EntityUUID(UUIDRegistry.getUUID(mdE))
+    val mdMC = mdE.eClass
+
+    val tagValues
+    : Iterable[tables.model.OTIMOFAppliedStereotypePropertyUnorderedReference]
+    = for {
+      is <- Option.apply(mdE.getAppliedStereotypeInstance).to[Iterable]
+      appliedStereotypes = is.getClassifier.flatMap {
+        case s: Stereotype =>
+          Some(s)
+        case _ =>
+          None
+      }
+      slot <- is.getSlot.to[Iterable]
+      f <- Option.apply(slot.getDefiningFeature).to[Iterable]
+      fmc <- f.getType match {
+        case mc: MDClass =>
+          Iterable(mc)
+        case _ =>
+          Iterable.empty[MDClass]
+      }
+      if appliedStereotypes
+        .exists { s => f == StereotypesHelper.getPropertyByName(s, f.getName) }
+      tagValue <- {
+        val tagValues
+        : Iterable[tables.model.OTIMOFAppliedStereotypePropertyUnorderedReference]
+        = if (f.isOrdered)
+          Iterable.empty
+        else
+          slot.getValue.toList.map {
+            case (ev: ElementValue) =>
+              tables.model.OTIMOFAppliedStereotypePropertyUnorderedReference(
+                resource,
+                modelElement = sourceUUID,
+                associationTargetEnd = common.EntityUUID(UUIDRegistry.getUUID(f)),
+                referencedElement = common.EntityUUID(UUIDRegistry.getUUID(ev.getElement)))
+            case (iv: InstanceValue) =>
+              tables.model.OTIMOFAppliedStereotypePropertyUnorderedReference(
+                resource,
+                modelElement = sourceUUID,
+                associationTargetEnd = common.EntityUUID(UUIDRegistry.getUUID(f)),
+                referencedElement = common.EntityUUID(UUIDRegistry.getUUID(iv.getInstance)))
+          }
+
+        tagValues
+      }
+    } yield tagValue
+
+    tagValues
   }
 
 }

@@ -43,7 +43,7 @@ import java.beans.PropertyChangeEvent
 import com.nomagic.magicdraw.core.Application
 import com.nomagic.magicdraw.uml.UUIDRegistry
 import com.nomagic.uml2.ext.jmi.{ChangeElementPositionPropertyChangeEvent, IndexedPropertyChangeEvent, UML2MetamodelConstants}
-import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Element
+import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.{Element, EnumerationLiteral}
 import org.omg.oti.mof._
 
 import scala.collection.immutable._
@@ -128,7 +128,8 @@ class OTIMOFTransactionEventsAnalyzer
                 case Some(otiMC) =>
                   val changed = new schema.events.ModelElementChangedEvent(
                     changeKind = schema.events.AddedChange,
-                    element = schema.model.ModelElement(
+                    element = schema.tables.model.OTMOFModelElement(
+                      resource = schema.common.ResourceIRI(value = ""),
                       uuid = schema.common.EntityUUID(UUIDRegistry.getUUID(e)),
                       metaClass = otiMC.uuid))
                   notify(changed, Iterable(desc))
@@ -149,9 +150,10 @@ class OTIMOFTransactionEventsAnalyzer
                 case Some(otiMC) =>
                   val changed = new schema.events.ModelElementChangedEvent(
                     changeKind = schema.events.DeletedChange,
-                    element = schema.model.ModelElement(
-                    uuid = schema.common.EntityUUID(UUIDRegistry.getUUID(e)),
-                    metaClass = otiMC.uuid))
+                    element = schema.tables.model.OTMOFModelElement(
+                      resource = schema.common.ResourceIRI(value = ""),
+                      uuid = schema.common.EntityUUID(UUIDRegistry.getUUID(e)),
+                      metaClass = otiMC.uuid))
                   notify(changed, Iterable(desc, s"post(DELETE) ID=${e.getID}, UUID=${UUIDRegistry.getUUID(e)}"))
               }
               analyze(rest)
@@ -163,7 +165,7 @@ class OTIMOFTransactionEventsAnalyzer
                   cache.lookupInversePropertyChangeEvent(event) match {
                     case None =>
 
-                      cache.metaclassAttributes.get(e.eClass) match {
+                      cache.metaclassOrderedAtomicAttributes.get(e.eClass) match {
                         case None =>
                           guiLog.log(desc)
 
@@ -189,40 +191,20 @@ class OTIMOFTransactionEventsAnalyzer
 
                                   if (eAttrib.isOrdered) {
 
-                                    val changed = new schema.events.ModelElementAttributeValueChangedEvent(
+                                    val changed = new schema.events.ModelOrderedAttributeAtomicValueChangedEvent(
                                       changeKind,
-                                      elementAttributeValue = schema.model.ModelElementOrderedAttributeValue(
-                                        modelElement = schema.common.EntityUUID(UUIDRegistry.getUUID(e)),
-                                        attributeValue = schema.values.AtomicValue(
-                                          attribute = attrib.uuid,
-                                          value =
+                                      attributeValue = schema.tables.values.OTIMOFOrderedAttributeAtomicValue(
+                                        resource = schema.common.ResourceIRI(value = ""),
+                                        entity = schema.common.EntityUUID(UUIDRegistry.getUUID(e)),
+                                        attribute = attrib.uuid,
+                                        value =
                                             if (changeKind == schema.events.DeletedChange)
                                               schema.common.AtomicValueRepresentation(oldV.toString)
                                             else
-                                              schema.common.AtomicValueRepresentation(newV.toString)
-                                        ),
-                                        index = pevent.getIndex
-                                      )
+                                              schema.common.AtomicValueRepresentation(newV.toString),
+                                        index = pevent.getIndex)
                                     )
                                     notify(changed, Iterable(desc))
-
-                                  } else {
-
-                                      val changed = new schema.events.ModelElementAttributeValueChangedEvent(
-                                        changeKind,
-                                        elementAttributeValue = schema.model.ModelElementUnorderedAttributeValue(
-                                          modelElement = schema.common.EntityUUID(UUIDRegistry.getUUID(e)),
-                                          attributeValue = schema.values.AtomicValue(
-                                            attribute = attrib.uuid,
-                                            value =
-                                              if (changeKind == schema.events.DeletedChange)
-                                                schema.common.AtomicValueRepresentation(oldV.toString)
-                                              else
-                                                schema.common.AtomicValueRepresentation(newV.toString)
-                                          )
-                                        )
-                                      )
-                                      notify(changed, Iterable(desc))
 
                                   }
 
@@ -230,38 +212,18 @@ class OTIMOFTransactionEventsAnalyzer
 
                                   if (eAttrib.isOrdered) {
 
-                                    val changed = new schema.events.ModelElementAttributeValueChangedEvent(
+                                    val changed = new schema.events.ModelOrderedAttributeAtomicValueChangedEvent(
                                       changeKind,
-                                      elementAttributeValue = schema.model.ModelElementOrderedAttributeValue(
-                                        modelElement = schema.common.EntityUUID(UUIDRegistry.getUUID(e)),
-                                        attributeValue = schema.values.AtomicValue(
-                                          attribute = attrib.uuid,
-                                          value =
-                                            if (changeKind == schema.events.DeletedChange)
-                                              schema.common.AtomicValueRepresentation(oldV.toString)
-                                            else
-                                              schema.common.AtomicValueRepresentation(newV.toString)
-                                        ),
-                                        index = ievent.getIndex
-                                      )
-                                    )
-                                    notify(changed, Iterable(desc))
-
-                                  } else {
-
-                                    val changed = new schema.events.ModelElementAttributeValueChangedEvent(
-                                      changeKind,
-                                      elementAttributeValue = schema.model.ModelElementUnorderedAttributeValue(
-                                        modelElement = schema.common.EntityUUID(UUIDRegistry.getUUID(e)),
-                                        attributeValue = schema.values.AtomicValue(
-                                          attribute = attrib.uuid,
-                                          value =
-                                            if (changeKind == schema.events.DeletedChange)
-                                              schema.common.AtomicValueRepresentation(oldV.toString)
-                                            else
-                                              schema.common.AtomicValueRepresentation(newV.toString)
-                                        )
-                                      )
+                                      attributeValue = schema.tables.values.OTIMOFOrderedAttributeAtomicValue(
+                                        resource = schema.common.ResourceIRI(value = ""),
+                                        entity = schema.common.EntityUUID(UUIDRegistry.getUUID(e)),
+                                        attribute = attrib.uuid,
+                                        value =
+                                          if (changeKind == schema.events.DeletedChange)
+                                            schema.common.AtomicValueRepresentation(oldV.toString)
+                                          else
+                                            schema.common.AtomicValueRepresentation(newV.toString),
+                                        index = ievent.getIndex)
                                     )
                                     notify(changed, Iterable(desc))
 
@@ -272,6 +234,233 @@ class OTIMOFTransactionEventsAnalyzer
                               }
                           }
                       }
+
+                      cache.metaclassOrderedEnumerationAttributes.get(e.eClass) match {
+                        case None =>
+                          guiLog.log(desc)
+
+                        case Some(name2attrib) =>
+                          name2attrib.get(prop) match {
+                            case None =>
+                              guiLog.log(desc)
+                              guiLog.log(s"ATTRIB: ???")
+
+                            case Some(Tuple2(attrib, eAttrib)) =>
+
+                              val changeKind =
+                                if (null == oldV && null != newV)
+                                  schema.events.AddedChange
+                                else if (null != oldV && null == newV)
+                                  schema.events.DeletedChange
+                                else
+                                  schema.events.ModifiedChange
+
+                              val value = if (changeKind == schema.events.DeletedChange)
+                                oldV
+                              else
+                                newV
+
+                              event match {
+
+                                case pevent: ChangeElementPositionPropertyChangeEvent =>
+
+                                  value match {
+                                    case lit: EnumerationLiteral =>
+
+                                      if (eAttrib.isOrdered) {
+
+                                        val changed = new schema.events.ModelOrderedAttributeEnumerationLiteralValueChangedEvent(
+                                          changeKind,
+                                          attributeValue = schema.tables.values.OTIMOFOrderedAttributeEnumerationLiteralValue(
+                                            resource = schema.common.ResourceIRI(value = ""),
+                                            entity = schema.common.EntityUUID(UUIDRegistry.getUUID(e)),
+                                            attribute = attrib.uuid,
+                                            value = schema.common.EntityUUID(UUIDRegistry.getUUID(lit)),
+                                            index = pevent.getIndex)
+                                        )
+                                        notify(changed, Iterable(desc))
+
+                                      }
+
+                                    case _ =>
+                                      ()
+                                  }
+
+                                case ievent: IndexedPropertyChangeEvent =>
+
+                                  value match {
+                                    case lit: EnumerationLiteral =>
+
+                                      if (eAttrib.isOrdered) {
+
+                                        val changed = new schema.events.ModelOrderedAttributeEnumerationLiteralValueChangedEvent(
+                                          changeKind,
+                                          attributeValue = schema.tables.values.OTIMOFOrderedAttributeEnumerationLiteralValue(
+                                            resource = schema.common.ResourceIRI(value = ""),
+                                            entity = schema.common.EntityUUID(UUIDRegistry.getUUID(e)),
+                                            attribute = attrib.uuid,
+                                            value = schema.common.EntityUUID(UUIDRegistry.getUUID(lit)),
+                                            index = ievent.getIndex)
+                                        )
+                                        notify(changed, Iterable(desc))
+
+                                      }
+
+                                    case _ =>
+                                      ()
+                                  }
+
+                                case _ =>
+                                  ()
+                              }
+                          }
+                      }
+
+                      cache.metaclassUnorderedAtomicAttributes.get(e.eClass) match {
+                        case None =>
+                          guiLog.log(desc)
+
+                        case Some(name2attrib) =>
+                          name2attrib.get(prop) match {
+                            case None =>
+                              guiLog.log(desc)
+                              guiLog.log(s"ATTRIB: ???")
+
+                            case Some(Tuple2(attrib, eAttrib)) =>
+
+                              val changeKind =
+                                if (null == oldV && null != newV)
+                                  schema.events.AddedChange
+                                else if (null != oldV && null == newV)
+                                  schema.events.DeletedChange
+                                else
+                                  schema.events.ModifiedChange
+
+                              event match {
+
+                                case pevent: ChangeElementPositionPropertyChangeEvent =>
+
+                                  if (!eAttrib.isOrdered) {
+
+                                    val changed = new schema.events.ModelUnorderedAttributeAtomicValueChangedEvent(
+                                      changeKind,
+                                      attributeValue = schema.tables.values.OTIMOFUnorderedAttributeAtomicValue(
+                                        resource = schema.common.ResourceIRI(value = ""),
+                                        entity = schema.common.EntityUUID(UUIDRegistry.getUUID(e)),
+                                        attribute = attrib.uuid,
+                                        value =
+                                          if (changeKind == schema.events.DeletedChange)
+                                            schema.common.AtomicValueRepresentation(oldV.toString)
+                                          else
+                                            schema.common.AtomicValueRepresentation(newV.toString))
+                                    )
+                                    notify(changed, Iterable(desc))
+
+                                  }
+
+                                case ievent: IndexedPropertyChangeEvent =>
+
+                                  if (!eAttrib.isOrdered) {
+
+                                    val changed = new schema.events.ModelUnorderedAttributeAtomicValueChangedEvent(
+                                      changeKind,
+                                      attributeValue = schema.tables.values.OTIMOFUnorderedAttributeAtomicValue(
+                                        resource = schema.common.ResourceIRI(value = ""),
+                                        entity = schema.common.EntityUUID(UUIDRegistry.getUUID(e)),
+                                        attribute = attrib.uuid,
+                                        value =
+                                          if (changeKind == schema.events.DeletedChange)
+                                            schema.common.AtomicValueRepresentation(oldV.toString)
+                                          else
+                                            schema.common.AtomicValueRepresentation(newV.toString))
+                                    )
+                                    notify(changed, Iterable(desc))
+
+                                  }
+
+                                case _ =>
+                                  ()
+                              }
+                          }
+                      }
+
+                      cache.metaclassUnorderedEnumerationAttributes.get(e.eClass) match {
+                        case None =>
+                          guiLog.log(desc)
+
+                        case Some(name2attrib) =>
+                          name2attrib.get(prop) match {
+                            case None =>
+                              guiLog.log(desc)
+                              guiLog.log(s"ATTRIB: ???")
+
+                            case Some(Tuple2(attrib, eAttrib)) =>
+
+                              val changeKind =
+                                if (null == oldV && null != newV)
+                                  schema.events.AddedChange
+                                else if (null != oldV && null == newV)
+                                  schema.events.DeletedChange
+                                else
+                                  schema.events.ModifiedChange
+
+                              val value = if (changeKind == schema.events.DeletedChange)
+                                oldV
+                              else
+                                newV
+
+                              event match {
+
+                                case pevent: ChangeElementPositionPropertyChangeEvent =>
+
+                                  value match {
+                                    case lit: EnumerationLiteral =>
+
+                                      if (!eAttrib.isOrdered) {
+
+                                        val changed = new schema.events.ModelUnorderedAttributeEnumerationLiteralValueChangedEvent(
+                                          changeKind,
+                                          attributeValue = schema.tables.values.OTIMOFUnorderedAttributeEnumerationLiteralValue(
+                                            resource = schema.common.ResourceIRI(value = ""),
+                                            entity = schema.common.EntityUUID(UUIDRegistry.getUUID(e)),
+                                            attribute = attrib.uuid,
+                                            value = schema.common.EntityUUID(UUIDRegistry.getUUID(lit)))
+                                        )
+                                        notify(changed, Iterable(desc))
+
+                                      }
+                                    case _ =>
+                                      ()
+                                  }
+
+                                case ievent: IndexedPropertyChangeEvent =>
+
+                                  value match {
+                                    case lit: EnumerationLiteral =>
+
+                                      if (!eAttrib.isOrdered) {
+
+                                        val changed = new schema.events.ModelUnorderedAttributeEnumerationLiteralValueChangedEvent(
+                                          changeKind,
+                                          attributeValue = schema.tables.values.OTIMOFUnorderedAttributeEnumerationLiteralValue(
+                                            resource = schema.common.ResourceIRI(value = ""),
+                                            entity = schema.common.EntityUUID(UUIDRegistry.getUUID(e)),
+                                            attribute = attrib.uuid,
+                                            value = schema.common.EntityUUID(UUIDRegistry.getUUID(lit)))
+                                        )
+                                        notify(changed, Iterable(desc))
+
+                                      }
+                                    case _ =>
+                                      ()
+                                  }
+
+                                case _ =>
+                                  ()
+                              }
+                          }
+                      }
+
                       analyze(rest)
 
                     // @todo Check for assoc.isOrdered & assoc.targetIsComposite
