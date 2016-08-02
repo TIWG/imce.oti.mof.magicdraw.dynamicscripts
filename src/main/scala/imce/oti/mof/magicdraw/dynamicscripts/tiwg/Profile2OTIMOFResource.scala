@@ -158,7 +158,7 @@ object Profile2OTIMOFResource {
         resourceType = Iterable(tables.OTIMOFResourceType(resource=profileIRI, kind=tables.OTIMOFResourceProfileKind)),
         extendedMetamodels = Iterable(tables.profile.OTIMOFProfile2ExtendedMetamodel(
           resource = profileIRI,
-          extendedMetamodel = resolver.umlR.resource.iri)),
+          extendedMetamodel = resolver.umlR.resourceType.head.resource)),
         importedProfiles = pf.packageImport.toVector.flatMap { pi =>
           pi.importedPackage match {
             case Some(ipf: UMLProfile[MagicDrawUML]) =>

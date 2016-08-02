@@ -1,0 +1,20 @@
+{
+  "documents": [
+    {
+      "otiCharacteristics": {
+        "packageURI": "http://www.omg.org/spec/PrimitiveTypes/20131001",
+        "documentURL": "http://www.omg.org/spec/UML/20131001/PrimitiveTypes.xmi",
+        "artifactKind": {
+          "type": "OTIBuiltInModelLibraryArtifactKind"
+        },
+        "nsPrefix": "PrimitiveTypes",
+        "uuidPrefix": "org.omg.uml.PrimitiveTypes"
+      },
+      "toolSpecificPackageID": "_18_0beta_8f90291_1396614094922_43091_3986",
+      "toolSpecificPackageURL": "mdel://_12_0EAPbeta_be00301_1157529392394_202602_1?projectName=MagicDraw18-UML25-implementation&elementName=Package+PrimitiveTypes&metaType=Package&elementQName=UML+Standard+Profile%3A%3AUML2+Metamodel%3A%3APrimitiveTypes",
+      "overrideID": [],
+      "overrideUUID": [],
+      "excludeNestedElements": []
+    }
+  ]
+}

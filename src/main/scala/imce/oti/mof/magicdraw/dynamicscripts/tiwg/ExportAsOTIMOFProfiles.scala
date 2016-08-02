@@ -61,7 +61,7 @@ object ExportAsOTIMOFProfiles {
   def getStereotype2ExtendedMetaclasses
   ( profileIRI: common.ResourceIRI,
     ss: Vector[UMLStereotype[MagicDrawUML]],
-    umlR: OTIMOFMetamodelResourceExtent )
+    umlR: OTIMOFMetamodelTables )
   : Vector[java.lang.Throwable] \&/ Vector[tables.profile.OTIMOFStereotype2ExtendedMetaclass]
   = ss.aggregate[\&/[Vector[java.lang.Throwable], Vector[tables.profile.OTIMOFStereotype2ExtendedMetaclass]]](\&/.That(Vector()))(
     {
@@ -80,7 +80,7 @@ object ExportAsOTIMOFProfiles {
   ( profileIRI: common.ResourceIRI,
     s: UMLStereotype[MagicDrawUML],
     baseP: UMLProperty[MagicDrawUML],
-    umlR: OTIMOFMetamodelResourceExtent )
+    umlR: OTIMOFMetamodelTables )
   : Vector[java.lang.Throwable] \&/ Vector[tables.profile.OTIMOFStereotype2ExtendedMetaclass]
   = baseP._type match {
     case None =>
@@ -92,8 +92,8 @@ object ExportAsOTIMOFProfiles {
       import Utils.selectable
 
       umlR
-        .classifiers
-        .select { case umlMC: metamodel.MetaClass => umlMC }
+        .metaClasses
+        .select { case umlMC: tables.metamodel.OTIMOFMetaClass => umlMC }
         .find { umlMC => umlMC.name.value == extMC.name.get } match {
         case None =>
           \&/.This(Vector(

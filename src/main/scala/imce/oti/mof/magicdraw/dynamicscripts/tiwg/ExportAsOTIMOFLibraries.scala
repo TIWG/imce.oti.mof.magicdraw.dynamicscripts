@@ -38,16 +38,9 @@
  */
 package imce.oti.mof.magicdraw.dynamicscripts.tiwg
 
-import java.awt.event.ActionEvent
+import java.lang.System
 
-import com.nomagic.magicdraw.core.{Application, Project}
-import com.nomagic.magicdraw.ui.browser.{Node, Tree}
-import com.nomagic.magicdraw.uml.symbols.shapes.PackageView
-import com.nomagic.magicdraw.uml.symbols.{DiagramPresentationElement, PresentationElement}
-import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Package
-import gov.nasa.jpl.dynamicScripts.DynamicScriptsTypes
-import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataResults
-import org.omg.oti.json.common.OTIDocumentSetConfiguration
+import com.nomagic.magicdraw.core.Project
 import org.omg.oti.json.uml.serialization.OTIJsonSerializationHelper
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper.MagicDrawOTIDocumentSetAdapterForDataProvider
 import org.omg.oti.magicdraw.uml.read.{MagicDrawUML, MagicDrawUMLUtil}
@@ -56,9 +49,8 @@ import org.omg.oti.uml.read.api.{UMLElement, UMLPackage, UMLPrimitiveType}
 import org.omg.oti.uml.xmi.Document
 
 import scala.collection.immutable._
-import scala.{None, Option, StringContext}
+import scala.{None, Option, Some, StringContext}
 import scala.Predef.{ArrowAssoc, String}
-import scala.util.{Success, Try}
 import scalaz.Scalaz._
 import scalaz._
 
@@ -70,84 +62,57 @@ import scalaz._
   */
 object ExportAsOTIMOFLibraries {
 
-  def doit
-  ( p: Project, ev: ActionEvent,
-    script: DynamicScriptsTypes.BrowserContextMenuAction,
-    tree: Tree, node: Node,
-    top: Package,
-    selection: java.util.Collection[Package] )
-  : Try[Option[MagicDrawValidationDataResults]]
-  = Utils.browserDynamicScript(
-    p, ev, script, tree, node, top, selection,
-    "exportAsOTIMOFLibrary",
-    exportAsOTIMOFLibraryCallback,
-    Utils.chooseOTIDocumentSetConfigurationNoResources)
-
-  def doit
-  (p: Project,
-   ev: ActionEvent,
-   script: DynamicScriptsTypes.DiagramContextMenuAction,
-   dpe: DiagramPresentationElement,
-   triggerView: PackageView,
-   triggerElement: Package,
-   selection: java.util.Collection[PresentationElement])
-  : Try[Option[MagicDrawValidationDataResults]]
-  = Utils.diagramDynamicScript(
-    p, ev, script, dpe, triggerView, triggerElement, selection,
-    "exportAsOTIMOFLibrary",
-    exportAsOTIMOFLibraryCallback,
-    Utils.chooseOTIDocumentSetConfigurationNoResources)
-
-  def exportAsOTIMOFLibraryCallback
+  def exportAsOTIMOFLibraryTables
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
-    resourceExtents: Set[OTIMOFResourceExtent],
-    config: OTIDocumentSetConfiguration,
-    selectedSpecificationRootPackages: Set[UMLPackage[MagicDrawUML]] )
-  : Try[Option[MagicDrawValidationDataResults]]
-  = for {
-    cb <- exportAsOTIMOFLibrary(p, odsa, resourceExtents)
-    er <- Utils.exportAsOTIMOFResource(
-      p, odsa, config,
-      selectedSpecificationRootPackages,
-      resourceExtents, cb, "exportAsOTIMOFLibrary")
-  } yield er
-
-  def exportAsOTIMOFLibrary
-  ( p: Project,
-    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
-    resourceExtents: Set[OTIMOFResourceExtent])
-  : Try[(Document[MagicDrawUML], Set[Document[MagicDrawUML]]) => \&/[Vector[java.lang.Throwable], OTIMOFResourceExtent]]
+    d: Document[MagicDrawUML],
+    pkg: UMLPackage[MagicDrawUML])
+  : Vector[java.lang.Throwable] \&/ Vector[OTIMOFLibraryTables]
   = {
     val jHelper = OTIJsonSerializationHelper(odsa)
     implicit val ops = odsa.otiAdapter.umlOps
 
-    val app = Application.getInstance()
-    val guiLog = app.getGUILog
+    val libIRI = d.toOTIMOFResourceIRI
 
-    Success((d: Document[MagicDrawUML], _: Set[Document[MagicDrawUML]]) => {
+    val lib = OTIMOFLibraryTables(
+      resourceType = Iterable(tables.OTIMOFResourceType(resource=libIRI, kind=tables.OTIMOFResourceLibraryKind)),
+      importedLibraries = pkg.packageImport.toVector.flatMap { pi =>
+        pi.importedPackage match {
+          case Some(ipkg: UMLPackage[MagicDrawUML]) =>
+            odsa.ds.lookupDocumentByScope(ipkg) match {
+              case Some(dipkg) =>
+                Some(OTIMOFResourceLibraryImport(
+                  importingResource = libIRI,
+                  importedLibrary = dipkg.toOTIMOFResourceIRI))
+              case _ =>
+                System.out.println(
+                  s"Profile `${pkg.qualifiedName.get}` imports " +
+                    s"a package without a known OTI Document PackageURI: `${ipkg.qualifiedName.get}`")
+                None
+            }
+          case _ =>
+            None
+        }
+      },
 
-      val pExtent = d.extent match {
-        case ex: Set[UMLElement[MagicDrawUML]] =>
-          ex.par
-        case ex =>
-          ex.toSet.par
-      }
+      primitiveDataTypes = d.extent.flatMap(toDatatypeClassifier(libIRI)).toVector.sortBy(_.name),
+      enumerationDataTypes = Iterable.empty[tables.library.OTIMOFEnumerationDataType],
+      enumeration2literals = Iterable.empty[tables.library.OTIMOFEnumeration2Literal],
 
-      val app = Application.getInstance()
-      val guiLog = app.getGUILog
+      structuredDataTypes = Iterable.empty[tables.library.OTIMOFStructuredDataType],
+      generalizations = Iterable.empty[tables.library.OTIMOFStructuredDataTypeGeneralization],
+      structure2attribute = Iterable.empty[tables.library.OTIMOFStructuredDatatype2Attribute],
 
-      val lib = OTIMOFLibrary(d.toOTIMOFResourceIRI)
+      attributes = Iterable.empty[features.DataTypedAttributeProperty],
 
-      val extent = OTIMOFLibraryResourceExtent(
-        resource=lib,
-        classifiers=pExtent.flatMap(toDatatypeClassifier(_)).toVector.sortBy(_.name)
-      )
+      featureLowerBounds = Iterable.empty[features.FeatureLowerBound],
+      featureUpperBounds = Iterable.empty[features.FeatureUpperBound],
+      featureOrdering = Iterable.empty[features.FeatureOrdering],
 
-      guiLog.log(s"Library Extent: ${d.info.packageURI}")
+      attribute2type = Iterable.empty[features.AttributeProperty2DataType]
+    )
 
-      \&/.That(extent)
-    })
+    \&/.That(Vector(lib))
   }
 
   val primitiveTypeMap
@@ -161,12 +126,14 @@ object ExportAsOTIMOFLibraries {
     )
 
   def toDatatypeClassifier
+  (libIRI: common.ResourceIRI)
   (e: UMLElement[MagicDrawUML])
   (implicit ops: MagicDrawUMLUtil)
-  : Option[library.DatatypeClassifier]
+  : Option[tables.library.OTIMOFPrimitiveDataType]
   = e match {
     case pt: UMLPrimitiveType[MagicDrawUML] =>
-      library.PrimitiveDataType(
+  tables.library.OTIMOFPrimitiveDataType(
+        resource = libIRI,
         uuid = pt.toOTIMOFEntityUUID,
         name = common.Name(pt.name.get),
         datatypeMapDefinition = primitiveTypeMap(pt.name.get)

@@ -49,7 +49,7 @@ import org.omg.oti.uml.read.api._
 import org.omg.oti.uml.xmi.Document
 
 import scala.collection.immutable._
-import scala.{None, Option, Some, StringContext, Tuple4}
+import scala.{None, Option, Some, StringContext, Tuple3}
 import scala.Predef.String
 import scalaz._
 
@@ -79,13 +79,13 @@ object ExportAsOTIMOFModels {
   Vector[
     ( UMLProfile[MagicDrawUML],
       OTIMOFProfileTables,
-      OTIMOFResourceModelAppliedProfile,
       Map[
         (UMLStereotype[MagicDrawUML], UMLProperty[MagicDrawUML]),
         Set[UMLElement[MagicDrawUML]]] )]
 
   def onlyAppliedStereotypesByProfile
-  (modelIRI: common.ResourceIRI,
+  (odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
+   modelIRI: common.ResourceIRI,
    allAppliedStereotypesByOptionalProfile: AppliedStereotypesByOptionalProfile,
    profiles: Vector[OTIMOFProfileTables])
   : Vector[java.lang.Throwable] \&/ AppliedStereotypesByProfile
@@ -109,11 +109,10 @@ object ExportAsOTIMOFModels {
           val pf = optionalProfile.get
           val inc
           : \&/[Vector[java.lang.Throwable], AppliedStereotypesByProfile]
-          = lookupProfile(modelIRI, pf, profiles).map { pfR =>
-            Vector(Tuple4(
+          = lookupProfile(odsa, modelIRI, pf, profiles).map { pfR =>
+            Vector(Tuple3(
               pf,
               pfR,
-              OTIMOFResourceModelAppliedProfile(modelIRI, pfR.resourceType.head.resource),
               appliedStereotypes))
           }
           acc append inc
@@ -122,18 +121,20 @@ object ExportAsOTIMOFModels {
     _ append _)
 
   def lookupProfile
-  (applyingModel: common.ResourceIRI,
+  (odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
+   applyingModel: common.ResourceIRI,
    pf: UMLProfile[MagicDrawUML],
    profiles: Vector[OTIMOFProfileTables])
   : Vector[java.lang.Throwable] \&/ OTIMOFProfileTables
-  = pf.URI match {
+  = odsa.ds.lookupDocumentByExtent(pf) match {
     case None =>
       \&/.This(Vector(UMLError.illegalElementError[MagicDrawUML, UMLProfile[MagicDrawUML]](
-        s"Cannot lookup OTI MOF Profile resource without a Profile::URI for ${pf.qualifiedName.get}",
+        s"No OTI Document for profile ${pf.qualifiedName.get}",
         Iterable(pf))))
-    case Some(pfURI) =>
+    case Some(d) =>
+      val pfURI = d.toOTIMOFResourceIRI
       profiles
-        .find { r => pfURI == r.resourceType.head.resource.value } match {
+        .find { r => pfURI == r.resourceType.head.resource } match {
         case None =>
           \&/.This(Vector(UMLError.illegalElementError[MagicDrawUML, UMLProfile[MagicDrawUML]](
             s"No OTI MOF Profile resource for ${pf.qualifiedName.get} with Profile::URI=$pfURI",
@@ -183,44 +184,6 @@ object ExportAsOTIMOFModels {
         acc append inc
     },
     _ append _)
-
-  def exportAsOTIMOFModel
-  ( p: Project,
-    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider )
-  ( pfExtents: Vector[OTIMOFProfileTables],
-    d: Document[MagicDrawUML],
-    pkgDocuments: Set[Document[MagicDrawUML]] )
-  ( implicit cache: MetamodelTransactionPropertyNameCache )
-  : Vector[java.lang.Throwable] \&/ OTIMOFModelTables
-  = for {
-    allAppliedStereotypesByOptionalProfile <- d.scope.allAppliedStereotypesByProfile match {
-      case -\/(errors) =>
-        \&/.This(errors.toVector)
-      case \/-(result) =>
-        \&/.That(result)
-    }
-
-    modelIRI = d.toOTIMOFResourceIRI
-
-    allAppliedStereotypesByProfile <-
-    onlyAppliedStereotypesByProfile(modelIRI, allAppliedStereotypesByOptionalProfile, pfExtents)
-
-    appliedStereotypes <- allAppliedStereotypesByProfile
-      .aggregate[\&/[Vector[java.lang.Throwable], Vector[tables.model.OTIMOFAppliedStereotype]]](\&/.That(Vector()))(
-      {
-        case (acc, (_, pfR, _, stereotypedElements)) =>
-          import Utils.VectorSemigroup
-          val inc = toAppliedStereotypes(modelIRI, pfR, stereotypedElements)
-          val updated = acc append inc
-          updated
-      },
-      _ append _)
-
-    result <- exportAsOTIMOFModelExtent(
-      p, odsa, pfExtents,
-      d, modelIRI, appliedStereotypes, allAppliedStereotypesByProfile)
-
-  } yield result
 
   def exportAsOTIMOFModelExtent
   ( p: Project,
@@ -305,12 +268,31 @@ object ExportAsOTIMOFModels {
     val instantiatedMetamodels
     : Iterable[OTIMOFResourceInstantiatedMetamodel]
     = Iterable(OTIMOFResourceInstantiatedMetamodel(
-      instantiatedMetamodel = cache.resolver.umlR.resource.iri,
+      instantiatedMetamodel = cache.resolver.umlR.resourceType.head.resource,
       instantiatingModel = modelIRI))
 
     val appliedProfiles
     : Iterable[OTIMOFResourceModelAppliedProfile]
-    = allAppliedStereotypesByProfile.map(_._3)
+    = parExtent
+      .flatMap {
+        case pa: UMLProfileApplication[MagicDrawUML] =>
+          (pa.applyingPackage, pa.appliedProfile) match {
+            case (Some(pkg), Some(pf)) =>
+              for {
+                dpf <- odsa.ds.lookupDocumentByExtent(pf)
+              } yield OTIMOFResourceModelAppliedProfile(
+                applyingResource = modelIRI,
+                applyingPackage = pkg.toOTIMOFEntityUUID,
+                appliedResource = dpf.toOTIMOFResourceIRI,
+                appliedProfile = pf.toOTIMOFEntityUUID)
+
+            case _ =>
+              None
+          }
+        case _ =>
+          None
+      }
+      .to[Iterable]
 
     val orderedStereotypeReferences
     : Iterable[tables.model.OTIMOFAppliedStereotypePropertyOrderedReference]

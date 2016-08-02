@@ -54,7 +54,7 @@ import imce.oti.mof.magicdraw.dynamicscripts.tiwg.Utils
 import org.omg.oti.json.common.OTIDocumentSetConfiguration
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper._
 import org.omg.oti.magicdraw.uml.read.MagicDrawUML
-import org.omg.oti.mof.schema.OTIMOFResourceExtent
+import org.omg.oti.mof.schema.OTIMOFResourceTables
 import org.omg.oti.uml.read.api._
 
 import scala.Predef.{Map => _, Set => _}
@@ -162,7 +162,7 @@ object ModelCreationExample {
   def exampleCallback
   (p: Project,
    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
-   resourceExtents: Set[OTIMOFResourceExtent],
+   resourceExtents: Set[OTIMOFResourceTables],
    config: OTIDocumentSetConfiguration,
    selectedPackages: Set[UMLPackage[MagicDrawUML]] )
   : Try[Option[MagicDrawValidationDataResults]]

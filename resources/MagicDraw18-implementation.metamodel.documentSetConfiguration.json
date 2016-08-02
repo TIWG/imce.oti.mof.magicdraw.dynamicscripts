@@ -1,0 +1,20 @@
+{
+  "documents": [
+    {
+      "otiCharacteristics": {
+        "packageURI": "http://www.omg.org/spec/UML/20131001",
+        "documentURL": "http://www.omg.org/spec/UML/20131001/UML.xmi",
+        "artifactKind": {
+          "type": "OTIBuiltInMetamodelArtifactKind"
+        },
+        "nsPrefix": "uml",
+        "uuidPrefix": "org.omg.uml.UML"
+      },
+      "toolSpecificPackageID": "_18_0beta_8f90291_1396614064410_380937_3985",
+      "toolSpecificPackageURL": "mdel://_18_0beta_8f90291_1396614064410_380937_3985?projectName=MagicDraw18-UML25-implementation&elementName=Package+UML2.5&metaType=Package&elementQName=UML2.5",
+      "overrideID": [],
+      "overrideUUID": [],
+      "excludeNestedElements": []
+    }
+  ]
+}

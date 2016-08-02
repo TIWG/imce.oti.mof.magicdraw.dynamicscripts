@@ -76,12 +76,12 @@ object Package2OTIMOFResource {
       modelIRI = d.toOTIMOFResourceIRI
 
       allAppliedStereotypesByProfile <-
-      ExportAsOTIMOFModels.onlyAppliedStereotypesByProfile(modelIRI, allAppliedStereotypesByOptionalProfile, pfExtents)
+      ExportAsOTIMOFModels.onlyAppliedStereotypesByProfile(odsa, modelIRI, allAppliedStereotypesByOptionalProfile, pfExtents)
 
       appliedStereotypes <- allAppliedStereotypesByProfile
         .aggregate[\&/[Vector[java.lang.Throwable], Vector[tables.model.OTIMOFAppliedStereotype]]](\&/.That(Vector()))(
         {
-          case (acc, (_, pfR, _, stereotypedElements)) =>
+          case (acc, (_, pfR, stereotypedElements)) =>
             val inc = ExportAsOTIMOFModels.toAppliedStereotypes(modelIRI, pfR, stereotypedElements)
             val updated = acc append inc
             updated

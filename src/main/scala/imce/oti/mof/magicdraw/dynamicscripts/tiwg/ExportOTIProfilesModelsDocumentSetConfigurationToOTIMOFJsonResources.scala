@@ -69,7 +69,7 @@ import scala.Predef.{require,String}
 import scalaz.Scalaz._
 import scalaz._
 
-object ExportOTIDocumentSetConfigurationToOTIMOFJsonResources {
+object ExportOTIProfilesModelsDocumentSetConfigurationToOTIMOFJsonResources {
 
   def doit
   (p: Project, ev: ActionEvent, script: MainToolbarMenuAction)
@@ -103,7 +103,7 @@ object ExportOTIDocumentSetConfigurationToOTIMOFJsonResources {
   (resultDir: Path)
   (p: Project,
    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
-   resourceExtents: Set[OTIMOFResourceExtent],
+   resourceExtents: Set[OTIMOFResourceTables],
    config: OTIDocumentSetConfiguration,
    selectedPackages: Set[UMLPackage[MagicDrawUML]])
   : Try[Option[MagicDrawValidationDataResults]]
@@ -144,10 +144,10 @@ object ExportOTIDocumentSetConfigurationToOTIMOFJsonResources {
 
       case Success(_) =>
         val umlResolver =
-          resourceExtents.find(Utils.PrimitiveTypes_IRI == _.resource.iri) match {
-            case Some(primitiveTypesR: OTIMOFLibraryResourceExtent) =>
-              resourceExtents.find(Utils.UML25_IRI == _.resource.iri) match {
-                case Some(umlR: OTIMOFMetamodelResourceExtent) =>
+          resourceExtents.find(Utils.PrimitiveTypes_IRI == _.resourceType.head.resource) match {
+            case Some(primitiveTypesR: OTIMOFLibraryTables) =>
+              resourceExtents.find(Utils.UML25_IRI == _.resourceType.head.resource) match {
+                case Some(umlR: OTIMOFMetamodelTables) =>
                   Some(UMLMetamodelResolver.initialize(primitiveTypesR, umlR))
                 case _ =>
                   None
@@ -229,7 +229,7 @@ object ExportOTIDocumentSetConfigurationToOTIMOFJsonResources {
             val pfVs = profileExtents.b.getOrElse(Vector.empty)
             val pkVs = packageExtents.b.getOrElse(Vector.empty)
 
-            val result =  Tables.export(p, resultDir, pfVs, pkVs)
+            val result =  Tables.exportProfilesAndModels(resultDir, pfVs, pkVs)
 
             val errors
             : Vector[java.lang.Throwable]
@@ -238,7 +238,7 @@ object ExportOTIDocumentSetConfigurationToOTIMOFJsonResources {
 
             if (errors.isEmpty) {
 
-              result
+              result.map(_ => None)
 
             } else {
               val model = p.getModel

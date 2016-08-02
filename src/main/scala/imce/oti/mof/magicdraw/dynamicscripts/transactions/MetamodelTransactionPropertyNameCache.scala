@@ -59,7 +59,7 @@ import scala.Predef.{ArrowAssoc, String, augmentString, require}
 case class MetamodelTransactionPropertyNameCache
 ( resolver: UMLMetamodelResolver,
 
-  otiMetaclasses: Map[EClass, metamodel.MetaClass],
+  otiMetaclasses: Map[EClass, tables.metamodel.OTIMOFMetaClass],
 
   metaclasses: SortedSet[EClass],
 
@@ -199,7 +199,7 @@ object MetamodelTransactionPropertyNameCache {
       .foldLeft(new TreeSet[EClass]()){ _ + _ }
 
     val otiMetaclasses
-    : Map[EClass, metamodel.MetaClass]
+    : Map[EClass, tables.metamodel.OTIMOFMetaClass]
     = metaclasses.flatMap { mc =>
       for {
         otiMC <- umlMM.metaclasses.find(_.name.value == mc.getName)

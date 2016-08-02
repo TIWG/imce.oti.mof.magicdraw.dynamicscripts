@@ -38,20 +38,9 @@
  */
 package imce.oti.mof.magicdraw.dynamicscripts.tiwg
 
-import java.awt.event.ActionEvent
 import java.lang.System
 
 import com.nomagic.magicdraw.core.{Application, Project}
-import com.nomagic.magicdraw.ui.browser.{Node, Tree}
-import com.nomagic.magicdraw.uml.symbols.shapes.PackageView
-import com.nomagic.magicdraw.uml.symbols.{DiagramPresentationElement, PresentationElement}
-import com.nomagic.uml2.ext.magicdraw.classes.mdkernel.Package
-import gov.nasa.jpl.dynamicScripts.DynamicScriptsTypes
-import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataResults
-
-import imce.oti.mof.resolvers.OTIHelpers._
-
-import org.omg.oti.json.common.OTIDocumentSetConfiguration
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper._
 import org.omg.oti.magicdraw.uml.read.MagicDrawUML
 import org.omg.oti.mof.schema._
@@ -59,9 +48,8 @@ import org.omg.oti.uml.read.api._
 import org.omg.oti.uml.xmi.Document
 
 import scala.collection.immutable._
-import scala.{Int, None, Option, Some, StringContext}
+import scala.{Int, None, Some, StringContext}
 import scala.Predef.require
-import scala.util.{Failure, Success, Try}
 import scalaz._
 
 /**
@@ -73,73 +61,17 @@ import scalaz._
   */
 object ExportAsOTIMOFMetamodels {
 
-  def doit
-  ( p: Project, ev: ActionEvent,
-    script: DynamicScriptsTypes.BrowserContextMenuAction,
-    tree: Tree, node: Node,
-    top: Package,
-    selection: java.util.Collection[Package] )
-  : Try[Option[MagicDrawValidationDataResults]]
-  = Utils.browserDynamicScript(
-    p, ev, script, tree, node, top, selection,
-    "exportAsOTIMOFMetamodel",
-    exportAsOTIMOFMetamodelCallback,
-    Utils.chooseOTIDocumentSetConfigurationAndPrimitiveTypes)
-
-  def doit
-  (p: Project,
-   ev: ActionEvent,
-   script: DynamicScriptsTypes.DiagramContextMenuAction,
-   dpe: DiagramPresentationElement,
-   triggerView: PackageView,
-   triggerElement: Package,
-   selection: java.util.Collection[PresentationElement])
-  : Try[Option[MagicDrawValidationDataResults]]
-  = Utils.diagramDynamicScript(
-    p, ev, script, dpe, triggerView, triggerElement, selection,
-    "exportAsOTIMOFMetamodel",
-    exportAsOTIMOFMetamodelCallback,
-    Utils.chooseOTIDocumentSetConfigurationAndPrimitiveTypes)
-
-  def exportAsOTIMOFMetamodelCallback
-  ( p: Project,
-    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
-    resourceExtents: Set[OTIMOFResourceExtent],
-    config: OTIDocumentSetConfiguration,
-    selectedSpecificationRootPackages: Set[UMLPackage[MagicDrawUML]] )
-  : Try[Option[MagicDrawValidationDataResults]]
-  = for {
-    cb <- exportAsOTIMOFMetamodel(p, odsa, resourceExtents)
-    er <- Utils.exportAsOTIMOFResource(
-      p, odsa, config,
-      selectedSpecificationRootPackages,
-      resourceExtents, cb, "exportAsOTIMOFLibrary")
-  } yield er
-
-  def exportAsOTIMOFMetamodel
-  ( p: Project,
-    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
-    resourceExtents: Set[OTIMOFResourceExtent])
-  : Try[(Document[MagicDrawUML], Set[Document[MagicDrawUML]])=> \&/[Vector[java.lang.Throwable], OTIMOFResourceExtent]]
-  = resourceExtents.find(Utils.PrimitiveTypes_IRI == _.resource.iri) match {
-    case Some(r: OTIMOFLibraryResourceExtent) =>
-      Success(exportAsOTIMOFMetamodel(p, odsa, r) _)
-    case _ =>
-      Failure(new java.lang.IllegalArgumentException("No MD18 PrimitiveTypes library resource found!"))
-  }
-
   case class UMLAssociationInfo
   ( a: UMLAssociation[MagicDrawUML],
     source: UMLProperty[MagicDrawUML],
     target: UMLProperty[MagicDrawUML] )
 
-  def exportAsOTIMOFMetamodel
+  def exportAsOTIMOFMetamodelTables
   ( p: Project,
     odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
-    primitiveTypes: OTIMOFLibraryResourceExtent)
-  ( d: Document[MagicDrawUML],
-    pfDocuments: Set[Document[MagicDrawUML]] )
-  : Vector[java.lang.Throwable] \&/ OTIMOFResourceExtent
+    d: Document[MagicDrawUML],
+    pkg: UMLPackage[MagicDrawUML])
+  : Vector[java.lang.Throwable] \&/ Vector[OTIMOFMetamodelTables]
   = {
     implicit val ops = odsa.otiAdapter.umlOps
     import Utils.selectable
@@ -185,6 +117,7 @@ object ExportAsOTIMOFMetamodels {
         val mcUUID = mc.toOTIMOFEntityUUID
         mc
           .ownedAttribute
+          .filter(!_.isDerived)
           .zipWithIndex
           .filter(_._1._type match {
             case Some(_: UMLPrimitiveType[MagicDrawUML]) =>
@@ -242,206 +175,273 @@ object ExportAsOTIMOFMetamodels {
     val allAttributes = atomicAttributes ++ enumerationAttributes ++ structuredAttributes
 
     val metamodelIRI = d.toOTIMOFResourceIRI
-    val extent = OTIMOFMetamodelResourceExtent(
-      resource = OTIMOFMetamodel(metamodelIRI),
-      importedLibraries = Vector(
-        OTIMOFResourceLibraryImport(
-          importingResource = d.toOTIMOFResourceIRI,
-          importedLibrary = primitiveTypes.resource.iri)),
-      classifiers =
-        mcs.map { mc =>
-          metamodel.MetaClass(
-            uuid = mc.toOTIMOFEntityUUID,
-            name = common.Name(mc.name.get))
-        } ++
-          mas.map { case UMLAssociationInfo(ma, source, target) =>
-            metamodel.MetaAssociation(
-              uuid = ma.toOTIMOFEntityUUID,
-              name = common.Name(ma.name.get))
-          },
-      associationEnds = mas.flatMap { case UMLAssociationInfo(ma, source, target) =>
-
-        Vector(
-          features.AssociationSourceEnd(
-            resource = metamodelIRI,
-            uuid = source.toOTIMOFEntityUUID,
-            name = common.Name(source.name.get)),
-          if (target.isComposite)
-            features.AssociationTargetCompositeEnd(
-              resource = metamodelIRI,
-              uuid = target.toOTIMOFEntityUUID,
-              name = common.Name(target.name.get))
-          else
-            features.AssociationTargetReferenceEnd(
-              resource = metamodelIRI,
-              uuid = target.toOTIMOFEntityUUID,
-              name = common.Name(target.name.get))
-        )
-      },
-      association2source = mas.map { case UMLAssociationInfo(ma, source, target) =>
-        metamodel.MetaAssociation2SourceEndProperty(
-          association = ma.toOTIMOFEntityUUID,
-          sourceEnd = source.toOTIMOFEntityUUID
-        )
-      },
-      association2target = mas.map { case UMLAssociationInfo(ma, source, target) =>
-        metamodel.MetaAssociation2TargetEndProperty(
-          association = ma.toOTIMOFEntityUUID,
-          targetEnd = target.toOTIMOFEntityUUID
-        )
-      },
-      associationEnd2Metaclass = mas.flatMap { case UMLAssociationInfo(ma, source, target) =>
-        Vector(
-          metamodel.MetaAssociationEndProperty2MetaClassType(
-            associationEnd = source.toOTIMOFEntityUUID,
-            `type` = source.getMetaClassUUID()),
-          metamodel.MetaAssociationEndProperty2MetaClassType(
-            associationEnd = target.toOTIMOFEntityUUID,
-            `type` = target.getMetaClassUUID())
-        )
-      },
-      attributes = allAttributes.map { case (mcUUID, p, _) =>
-        features.DataTypedAttributeProperty(
-          resource = metamodelIRI,
-          uuid = p.toOTIMOFEntityUUID,
-          name = common.Name(p.name.get))
-      },
-      attribute2type = allAttributes.map { case (_, p, _) =>
-          features.AttributeProperty2DataType(
-            resource = metamodelIRI,
-            attribute = p.toOTIMOFEntityUUID,
-            `type` = p.getSchemaDatatypeUUID()
-          )
-      },
-      metaclass2orderedAtomicAttribute = atomicAttributes.flatMap {
-        case (mcUUID, p, i) if p.isOrdered =>
-          Some(metamodel.MetaClass2Attribute(
-            metaClass = mcUUID,
-            attribute = p.toOTIMOFEntityUUID,
-            index = i))
+    val im = pkg.packageImport.toVector.flatMap { pi =>
+      pi.importedPackage match {
+        case Some(ipkg: UMLPackage[MagicDrawUML]) =>
+          odsa.ds.lookupDocumentByScope(ipkg) match {
+            case Some(dipkg) =>
+              Some(OTIMOFResourceMetamodelImport(
+                importingMetamodel = metamodelIRI,
+                importedMetamodel = dipkg.toOTIMOFResourceIRI))
+            case _ =>
+              System.out.println(
+                s"Profile `${pkg.qualifiedName.get}` imports " +
+                  s"a package without a known OTI Document PackageURI: `${ipkg.qualifiedName.get}`")
+              None
+          }
         case _ =>
           None
-      },
-      metaclass2orderedEnumerationAttribute = enumerationAttributes.flatMap {
-        case (mcUUID, p, i) if p.isOrdered =>
-          Some(metamodel.MetaClass2Attribute(
-            metaClass = mcUUID,
-            attribute = p.toOTIMOFEntityUUID,
-            index = i))
-        case _ =>
-          None
-      },
-      metaclass2orderedStructuredAttribute = structuredAttributes.flatMap {
-        case (mcUUID, p, i) if p.isOrdered =>
-          Some(metamodel.MetaClass2Attribute(
-            metaClass = mcUUID,
-            attribute = p.toOTIMOFEntityUUID,
-            index = i))
-        case _ =>
-          None
-      },
-      metaclass2unorderedAtomicAttribute = atomicAttributes.flatMap {
-        case (mcUUID, p, i) if !p.isOrdered =>
-          Some(metamodel.MetaClass2Attribute(
-            metaClass = mcUUID,
-            attribute = p.toOTIMOFEntityUUID,
-            index = i))
-        case _ =>
-          None
-      },
-      metaclass2unorderedEnumerationAttribute = enumerationAttributes.flatMap {
-        case (mcUUID, p, i) if !p.isOrdered =>
-          Some(metamodel.MetaClass2Attribute(
-            metaClass = mcUUID,
-            attribute = p.toOTIMOFEntityUUID,
-            index = i))
-        case _ =>
-          None
-      },
-      metaclass2unorderedStructuredAttribute = structuredAttributes.flatMap {
-        case (mcUUID, p, i) if !p.isOrdered =>
-          Some(metamodel.MetaClass2Attribute(
-            metaClass = mcUUID,
-            attribute = p.toOTIMOFEntityUUID,
-            index = i))
-        case _ =>
-          None
-      },
-      featureLowerBounds = mas.map { case UMLAssociationInfo(ma, source, target) =>
-        features.FeatureLowerBound(
-          resource = metamodelIRI,
-          feature = source.toOTIMOFEntityUUID,
-          lower = common.NonNegativeInt(source.lower.intValue())
-        )
-      } ++ mas.map { case UMLAssociationInfo(ma, source, target) =>
-        features.FeatureLowerBound(
-          resource = metamodelIRI,
-          feature = target.toOTIMOFEntityUUID,
-          lower = common.NonNegativeInt(target.lower.intValue())
-        )
-      } ++ allAttributes.map { case (_, p, _) =>
-        features.FeatureLowerBound(
-          resource = metamodelIRI,
-          feature = p.toOTIMOFEntityUUID,
-          lower = common.NonNegativeInt(p.lower.intValue()))
-      },
-      featureUpperBounds = mas.map { case UMLAssociationInfo(ma, source, target) =>
-        features.FeatureUpperBound(
-          resource = metamodelIRI,
-          feature = source.toOTIMOFEntityUUID,
-          upper = common.UnlimitedNatural(source.upper.intValue()))
-      } ++ mas.map { case UMLAssociationInfo(ma, source, target) =>
-        features.FeatureUpperBound(
-          resource = metamodelIRI,
-          feature = target.toOTIMOFEntityUUID,
-          upper = common.UnlimitedNatural(target.upper.intValue()))
-      } ++ allAttributes.map { case (_, p, _) =>
-        features.FeatureUpperBound(
-          resource = metamodelIRI,
-          feature = p.toOTIMOFEntityUUID,
-          upper = common.UnlimitedNatural(p.upper.intValue()))
-      },
-      featureOrdering = mas.map { case UMLAssociationInfo(ma, source, target) =>
-        features.FeatureOrdering(
-          resource = metamodelIRI,
-          feature = source.toOTIMOFEntityUUID,
-          isOrdered = source.isOrdered)
-      } ++ mas.map { case UMLAssociationInfo(ma, source, target) =>
-        features.FeatureOrdering(
-          resource = metamodelIRI,
-          feature = target.toOTIMOFEntityUUID,
-          isOrdered = target.isOrdered)
-      } ++ allAttributes.map { case (_, p, _) =>
-        features.FeatureOrdering(
-          resource = metamodelIRI,
-          feature = p.toOTIMOFEntityUUID,
-          isOrdered = p.isOrdered)
-      },
-      generalizations = mcs.flatMap { mc =>
-        val specific = mc.toOTIMOFEntityUUID
-        mc.parents.flatMap {
-          case pc: UMLClass[MagicDrawUML] if mcs.contains(pc) =>
-            Some(metamodel.MetaClassifierGeneralization(
-              specific,
-              general=pc.toOTIMOFEntityUUID))
-          case _ =>
-            None
-        }
-      } ++ mas.flatMap { case UMLAssociationInfo(ma, source, target) =>
-        val specific = ma.toOTIMOFEntityUUID
-        ma.parents.flatMap {
-          case pa: UMLAssociation[MagicDrawUML] =>
-            Some(metamodel.MetaClassifierGeneralization(
-              specific,
-              general=pa.toOTIMOFEntityUUID))
-          case _ =>
-            None
-        }
       }
-    )
+    }
+
+    val il = pkg.packageImport.toVector.flatMap { pi =>
+      pi.importedPackage match {
+        case Some(ipkg: UMLPackage[MagicDrawUML]) =>
+          odsa.ds.lookupDocumentByScope(ipkg) match {
+            case Some(dipkg) =>
+              Some(OTIMOFResourceLibraryImport(
+                importingResource = metamodelIRI,
+                importedLibrary = dipkg.toOTIMOFResourceIRI))
+            case _ =>
+              System.out.println(
+                s"Profile `${pkg.qualifiedName.get}` imports " +
+                  s"a package without a known OTI Document PackageURI: `${ipkg.qualifiedName.get}`")
+              None
+          }
+        case _ =>
+          None
+      }
+    }
+
+    val gs = mcs.flatMap { mc =>
+      val specific = mc.toOTIMOFEntityUUID
+      mc.parents.flatMap {
+        case pc: UMLClass[MagicDrawUML] if mcs.contains(pc) =>
+          Some(tables.metamodel.OTIMOFMetaCLassifierGeneralization(
+            resource = metamodelIRI,
+            specific,
+            general=pc.toOTIMOFEntityUUID))
+        case _ =>
+          None
+      }
+    } ++ mas.flatMap { case UMLAssociationInfo(ma, source, target) =>
+      val specific = ma.toOTIMOFEntityUUID
+      ma.parents.flatMap {
+        case pa: UMLAssociation[MagicDrawUML] =>
+          Some(tables.metamodel.OTIMOFMetaCLassifierGeneralization(
+            resource = metamodelIRI,
+            specific,
+            general=pa.toOTIMOFEntityUUID))
+        case _ =>
+          None
+      }
+    }
+
+    val ma2s = mas.map { case UMLAssociationInfo(ma, source, _) =>
+      tables.metamodel.OTIMOFMetaAssociation2SourceEndProperty(
+        resource = metamodelIRI,
+        association = ma.toOTIMOFEntityUUID,
+        sourceEnd = source.toOTIMOFEntityUUID)
+    }
+
+    val ma2t = mas.map { case UMLAssociationInfo(ma, _, target) =>
+      tables.metamodel.OTIMOFMetaAsslcoation2TargetEndProperty(
+        resource = metamodelIRI,
+        association = ma.toOTIMOFEntityUUID,
+        targetEnd = target.toOTIMOFEntityUUID)
+    }
+
+    val maes = mas.map { case UMLAssociationInfo(ma, source, _) =>
+      features.AssociationSourceEnd(
+        resource = metamodelIRI,
+        uuid = source.toOTIMOFEntityUUID,
+        name = common.Name(source.name.getOrElse("")))
+    } ++ mas.map { case UMLAssociationInfo(ma, _, target) =>
+      if (target.isComposite)
+        features.AssociationTargetCompositeEnd(
+          resource = metamodelIRI,
+          uuid = target.toOTIMOFEntityUUID,
+          name = common.Name(target.name.getOrElse("")))
+      else
+        features.AssociationTargetReferenceEnd(
+          resource = metamodelIRI,
+          uuid = target.toOTIMOFEntityUUID,
+          name = common.Name(target.name.getOrElse("")))
+    }
+
+    val mae2mc =
+      mas.map { case UMLAssociationInfo(ma, source, _) =>
+        tables.metamodel.OTIMOFMetaAssociationEndProperty2MetaClassType(
+          resource = metamodelIRI,
+          associationEnd = source.toOTIMOFEntityUUID,
+          `type` = source._type.get.toOTIMOFEntityUUID)
+      } ++ mas.map { case UMLAssociationInfo(ma, _, target) =>
+        tables.metamodel.OTIMOFMetaAssociationEndProperty2MetaClassType(
+          resource = metamodelIRI,
+          associationEnd = target.toOTIMOFEntityUUID,
+          `type` = target._type.get.toOTIMOFEntityUUID)
+      }
+
+    val as = allAttributes.map { case (mcUUID, p, _) =>
+      features.DataTypedAttributeProperty(
+        resource = metamodelIRI,
+        uuid = p.toOTIMOFEntityUUID,
+        name = common.Name(p.name.get))
+    }
+
+    val flb = mas.map { case UMLAssociationInfo(ma, source, target) =>
+      features.FeatureLowerBound(
+        resource = metamodelIRI,
+        feature = source.toOTIMOFEntityUUID,
+        lower = common.NonNegativeInt(source.lower.intValue())
+      )
+    } ++ mas.map { case UMLAssociationInfo(ma, source, target) =>
+      features.FeatureLowerBound(
+        resource = metamodelIRI,
+        feature = target.toOTIMOFEntityUUID,
+        lower = common.NonNegativeInt(target.lower.intValue())
+      )
+    } ++ allAttributes.map { case (_, p, _) =>
+      features.FeatureLowerBound(
+        resource = metamodelIRI,
+        feature = p.toOTIMOFEntityUUID,
+        lower = common.NonNegativeInt(p.lower.intValue()))
+    }
+
+    val fub = mas.map { case UMLAssociationInfo(ma, source, target) =>
+      features.FeatureUpperBound(
+        resource = metamodelIRI,
+        feature = source.toOTIMOFEntityUUID,
+        upper = common.UnlimitedNatural(source.upper.intValue()))
+    } ++ mas.map { case UMLAssociationInfo(ma, source, target) =>
+      features.FeatureUpperBound(
+        resource = metamodelIRI,
+        feature = target.toOTIMOFEntityUUID,
+        upper = common.UnlimitedNatural(target.upper.intValue()))
+    } ++ allAttributes.map { case (_, p, _) =>
+      features.FeatureUpperBound(
+        resource = metamodelIRI,
+        feature = p.toOTIMOFEntityUUID,
+        upper = common.UnlimitedNatural(p.upper.intValue()))
+    }
+
+    val fo = mas.map { case UMLAssociationInfo(ma, source, target) =>
+      features.FeatureOrdering(
+        resource = metamodelIRI,
+        feature = source.toOTIMOFEntityUUID,
+        isOrdered = source.isOrdered)
+    } ++ mas.map { case UMLAssociationInfo(ma, source, target) =>
+      features.FeatureOrdering(
+        resource = metamodelIRI,
+        feature = target.toOTIMOFEntityUUID,
+        isOrdered = target.isOrdered)
+    } ++ allAttributes.map { case (_, p, _) =>
+      features.FeatureOrdering(
+        resource = metamodelIRI,
+        feature = p.toOTIMOFEntityUUID,
+        isOrdered = p.isOrdered)
+    }
+
+    val a2t = allAttributes.map { case (_, p, _) =>
+      features.AttributeProperty2DataType(
+        resource = metamodelIRI,
+        attribute = p.toOTIMOFEntityUUID,
+        `type` = p._type.get.toOTIMOFEntityUUID)
+    }
+
+    val extent = OTIMOFMetamodelTables(
+      resourceType = Iterable(tables.OTIMOFResourceType(resource=metamodelIRI, kind=tables.OTIMOFResourceMetamodelKind)),
+      importedMetamodels = im,
+      importedLibraries = il,
+      
+      metaClasses = mcs.map { mc =>
+        tables.metamodel.OTIMOFMetaClass(
+          resource = metamodelIRI,
+          uuid = mc.toOTIMOFEntityUUID,
+          name = common.Name(mc.name.get))
+      },
+      metaAssociations = mas.map { case UMLAssociationInfo(ma, _, _) =>
+        tables.metamodel.OTIMOFMetaAssociation(
+          resource = metamodelIRI,
+          uuid = ma.toOTIMOFEntityUUID,
+          name = common.Name(ma.name.get))
+      },
+
+      generalizations = gs,
+      metaClass2orderedAtomicAttribute = atomicAttributes.flatMap {
+        case (mcUUID, p, i) if p.isOrdered =>
+          Some(tables.metamodel.OTIMOFMetaClass2Attribute(
+            resource = metamodelIRI,
+            metaClass = mcUUID,
+            attribute = p.toOTIMOFEntityUUID,
+            index = i))
+        case _ =>
+          None
+      },
+      metaClass2orderedEnumerationAttribute = enumerationAttributes.flatMap {
+        case (mcUUID, p, i) if p.isOrdered =>
+          Some(tables.metamodel.OTIMOFMetaClass2Attribute(
+            resource = metamodelIRI,
+            metaClass = mcUUID,
+            attribute = p.toOTIMOFEntityUUID,
+            index = i))
+        case _ =>
+          None
+      },
+      metaClass2orderedStructuredAttribute = structuredAttributes.flatMap {
+        case (mcUUID, p, i) if p.isOrdered =>
+          Some(tables.metamodel.OTIMOFMetaClass2Attribute(
+            resource = metamodelIRI,
+            metaClass = mcUUID,
+            attribute = p.toOTIMOFEntityUUID,
+            index = i))
+        case _ =>
+          None
+      },
+      metaClass2unorderedAtomicAttribute = atomicAttributes.flatMap {
+        case (mcUUID, p, i) if !p.isOrdered =>
+          Some(tables.metamodel.OTIMOFMetaClass2Attribute(
+            resource = metamodelIRI,
+            metaClass = mcUUID,
+            attribute = p.toOTIMOFEntityUUID,
+            index = i))
+        case _ =>
+          None
+      },
+      metaClass2unorderedEnumerationAttribute = enumerationAttributes.flatMap {
+        case (mcUUID, p, i) if !p.isOrdered =>
+          Some(tables.metamodel.OTIMOFMetaClass2Attribute(
+            resource = metamodelIRI,
+            metaClass = mcUUID,
+            attribute = p.toOTIMOFEntityUUID,
+            index = i))
+        case _ =>
+          None
+      },
+      metaClass2unorderedStructuredAttribute = structuredAttributes.flatMap {
+        case (mcUUID, p, i) if !p.isOrdered =>
+          Some(tables.metamodel.OTIMOFMetaClass2Attribute(
+            resource = metamodelIRI,
+            metaClass = mcUUID,
+            attribute = p.toOTIMOFEntityUUID,
+            index = i))
+        case _ =>
+          None
+      },
+
+      metaAssociation2Source = ma2s,
+      metaAssociation2Target = ma2t,
+      metaAssociationEnds = maes,
+      metaAssociationEnd2MetaClass = mae2mc,
+
+      attributes = as,
+      featureLowerBounds = flb,
+      featureUpperBounds = fub,
+      featureOrdering = fo,
+      attribute2type = a2t)
 
     guiLog.log(s"Metamodel Extent: ${d.info.packageURI}")
 
-    \&/.That(extent)
+    \&/.That(Vector(extent))
   }
 }
