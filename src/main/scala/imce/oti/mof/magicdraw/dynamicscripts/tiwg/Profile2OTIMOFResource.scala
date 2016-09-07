@@ -42,7 +42,6 @@ package imce.oti.mof.magicdraw.dynamicscripts.tiwg
 import java.nio.file.Path
 import java.lang.System
 
-import imce.oti.mof.resolvers.UMLMetamodelResolver
 import org.omg.oti.json.common.OTIPrimitiveTypes
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper.MagicDrawOTIDocumentSetAdapterForDataProvider
 import org.omg.oti.magicdraw.uml.read.MagicDrawUML
@@ -63,7 +62,7 @@ object Profile2OTIMOFResource {
   def profile2OTIMOFResource
   (resultDir: Path,
    odsa: MagicDrawOTIDocumentSetAdapterForDataProvider,
-   resolver: UMLMetamodelResolver,
+   resolver: views.UMLMetamodelResolver,
    pf: UMLProfile[MagicDrawUML],
    d: Document[MagicDrawUML])
   : Vector[java.lang.Throwable] \&/ Vector[OTIMOFProfileTables]
@@ -182,7 +181,8 @@ object Profile2OTIMOFResource {
           tables.profile.OTIMOFStereotype(
             resource = profileIRI,
             uuid = s.toOTIMOFEntityUUID,
-            name = common.Name(s.name.get))
+            name = common.Name(s.name.get),
+            isAbstract = s.isAbstract)
         },
 
         generalizations = ss.flatMap { s =>

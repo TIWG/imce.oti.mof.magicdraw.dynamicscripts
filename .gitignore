@@ -7,3 +7,5 @@ project/project
 project/target
 resources/UML
 target
+local.*
+gh-pages/

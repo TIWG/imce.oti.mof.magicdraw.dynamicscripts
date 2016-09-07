@@ -39,9 +39,11 @@
 package imce.oti.mof.magicdraw.dynamicscripts.tiwg
 
 import java.awt.event.ActionEvent
-import java.lang.{IllegalArgumentException,System}
-import java.nio.file.{Files,Path}
+import java.lang.{IllegalArgumentException, System}
+import java.nio.file.{Files, Path}
 
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import com.nomagic.actions.NMAction
 import com.nomagic.magicdraw.core.Project
 import com.nomagic.uml2.ext.jmi.helpers.StereotypesHelper
@@ -52,7 +54,6 @@ import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataR
 import gov.nasa.jpl.dynamicScripts.magicdraw.validation.internal.MDValidationAPIHelper._
 import gov.nasa.jpl.dynamicScripts.magicdraw.utils.MDProjectUsageHelper
 import imce.oti.mof.magicdraw.dynamicscripts.transactions.MetamodelTransactionPropertyNameCache
-import imce.oti.mof.resolvers.UMLMetamodelResolver
 import org.omg.oti.json.common.OTIDocumentSetConfiguration
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper._
 import org.omg.oti.magicdraw.uml.read._
@@ -65,7 +66,7 @@ import scala.collection.immutable._
 import scala.collection.JavaConversions._
 import scala.util.{Failure, Success, Try}
 import scala.{None, Option, Some, StringContext, Tuple2}
-import scala.Predef.{require,String}
+import scala.Predef.{String, require}
 import scalaz.Scalaz._
 import scalaz._
 
@@ -148,7 +149,7 @@ object ExportOTIProfilesModelsDocumentSetConfigurationToOTIMOFJsonResources {
             case Some(primitiveTypesR: OTIMOFLibraryTables) =>
               resourceExtents.find(Utils.UML25_IRI == _.resourceType.head.resource) match {
                 case Some(umlR: OTIMOFMetamodelTables) =>
-                  Some(UMLMetamodelResolver.initialize(primitiveTypesR, umlR))
+                  Some(views.UMLMetamodelResolver.initialize(primitiveTypesR, umlR))
                 case _ =>
                   None
               }
@@ -228,6 +229,10 @@ object ExportOTIProfilesModelsDocumentSetConfigurationToOTIMOFJsonResources {
 
             val pfVs = profileExtents.b.getOrElse(Vector.empty)
             val pkVs = packageExtents.b.getOrElse(Vector.empty)
+
+            implicit val system = ActorSystem("ExportOTIProfilesModelsDocumentSetConfigurationToOTIMOFJsonResources")
+            implicit val mat = ActorMaterializer()
+            implicit val ec = system.dispatcher
 
             val result =  Tables.exportProfilesAndModels(resultDir, pfVs, pkVs)
 

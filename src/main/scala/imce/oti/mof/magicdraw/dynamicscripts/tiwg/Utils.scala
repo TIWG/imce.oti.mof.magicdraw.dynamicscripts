@@ -56,7 +56,6 @@ import gov.nasa.jpl.dynamicScripts.magicdraw.ui.symbols.internal.SymbolHelper._
 import gov.nasa.jpl.dynamicScripts.magicdraw.utils.MDUML
 import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataResults
 import gov.nasa.jpl.imce.oti.magicdraw.dynamicScripts.utils.OTIHelper
-import imce.oti.mof.resolvers.UMLMetamodelResolver
 import org.omg.oti.json.common.{OTIDocumentConfiguration, OTIDocumentSetConfiguration, OTIPrimitiveTypes}
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper._
 import org.omg.oti.magicdraw.uml.read.MagicDrawUML
@@ -192,7 +191,7 @@ object Utils {
   val PrimitiveTypes_IRI = common.ResourceIRI("http://www.omg.org/spec/PrimitiveTypes/20131001")
   val UML25_IRI = common.ResourceIRI("http://www.omg.org/spec/UML/20131001")
 
-  val resourcesPath: String = "dynamicScripts/imce.oti.mof.magicdraw.dynamicscripts/resources/"
+  val resourcesPath: String = "dynamicScripts/org.omg.oti.mof.md18.generator/resources/"
 
   val MagicDraw18_implementation_DocumentSetConfiguration_File
   : String
@@ -627,6 +626,7 @@ object Utils {
     implicit val mat = ActorMaterializer()
     implicit val ec = system.dispatcher
 
+    System.out.println(s"PrimitiveFilesFolder: "+MagicDraw18_UML25Implementation_PrimitiveTypes_File)
     chooseJsonFolder(
       MagicDraw18_UML25Implementation_PrimitiveTypes_File,
       () => chooseExistingDirectory(
@@ -661,6 +661,7 @@ object Utils {
     implicit val mat = ActorMaterializer()
     implicit val ec = system.dispatcher
 
+    System.out.println(s"UML MetamodelFolder: "+MagicDraw18_UML25Implementation_UMLMetamodel_File)
     chooseJsonFolder(
       MagicDraw18_UML25Implementation_UMLMetamodel_File,
       () => chooseExistingDirectory(
@@ -677,7 +678,7 @@ object Utils {
 
   def choosePrimitiveTypesAndUMLMetamodel4Resolver
   ()
-  : Try[Option[UMLMetamodelResolver]]
+  : Try[Option[views.UMLMetamodelResolver]]
   = for {
     pt <- choosePrimitiveTypes()
     mm <- chooseUMLMetamodel()
@@ -685,7 +686,7 @@ object Utils {
     for {
       ptr <- pt
       mmr <- mm
-    } yield UMLMetamodelResolver.initialize(ptr, mmr)
+    } yield views.UMLMetamodelResolver.initialize(ptr, mmr)
 
   def chooseOTIDocumentSetConfigurationAndPrimitiveTypesAndUMLMetamodel
   ()

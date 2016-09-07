@@ -1,4 +1,5 @@
 object Versions_oti_mof_schema {
-  // git@github.jpl.nasa.gov:imce/org.omg.oti.mof.schema.git
-  val version="3.7.0"
+
+  // https://github.com/TIWG/org.omg.oti.mof.schema
+  val version="3.8.0"
 }

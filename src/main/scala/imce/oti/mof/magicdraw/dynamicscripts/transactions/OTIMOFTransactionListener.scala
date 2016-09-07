@@ -53,7 +53,6 @@ import gov.nasa.jpl.dynamicScripts.DynamicScriptsTypes
 import gov.nasa.jpl.dynamicScripts.magicdraw.validation.MagicDrawValidationDataResults
 
 import imce.oti.mof.magicdraw.dynamicscripts.tiwg.Utils
-import imce.oti.mof.resolvers.UMLMetamodelResolver
 
 import org.omg.oti.mof.schema._
 import org.omg.oti.uml.UMLError
@@ -66,7 +65,7 @@ import scala.util.{Failure, Success, Try}
 
 @deprecated("", "")
 class OTIMOFTransactionListener
-( val umlMM: UMLMetamodelResolver,
+( val umlMM: views.UMLMetamodelResolver,
   val eventNotifiers: Seq[(events.ModelChangedEvent, Iterable[String]) => Unit] )
 extends TransactionCommitListener {
 

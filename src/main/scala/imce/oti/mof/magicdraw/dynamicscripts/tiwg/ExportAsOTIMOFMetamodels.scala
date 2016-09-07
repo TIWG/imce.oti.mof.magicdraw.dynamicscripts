@@ -49,7 +49,7 @@ import org.omg.oti.uml.xmi.Document
 
 import scala.collection.immutable._
 import scala.{Int, None, Some, StringContext}
-import scala.Predef.require
+import scala.Predef.{require,ArrowAssoc}
 import scalaz._
 
 /**
@@ -106,6 +106,54 @@ object ExportAsOTIMOFMetamodels {
           UMLAssociationInfo(ma, source, target)
         }
       }
+
+    val subsetted2subsetted
+    : Map[UMLAssociationInfo, Set[UMLAssociationInfo]]
+    = (for {
+      subA <- mas
+      subsettedAs = for {
+        subsettedSource <- subA.source.subsettedProperty
+        subsettedA <- mas.find { _.source == subsettedSource }
+        if subA.target.subsettedProperty.contains(subsettedA.target)
+      } yield subsettedA
+    } yield subA -> subsettedAs).toMap
+
+    val subsetted2redefined
+    : Map[UMLAssociationInfo, Set[UMLAssociationInfo]]
+    = (for {
+      subA <- mas
+      subsettedAs = for {
+        subsettedSource <- subA.source.subsettedProperty
+        subsettedA <- mas.find { _.source == subsettedSource }
+        if subA.target.redefinedProperty.contains(subsettedA.target)
+      } yield subsettedA
+    } yield subA -> subsettedAs).toMap
+
+    val redefined2subsetted
+    : Map[UMLAssociationInfo, Set[UMLAssociationInfo]]
+    = (for {
+      redA <- mas
+      redefinedAs = for {
+        redefinedSource <- redA.source.redefinedProperty
+        redefinedA <- mas.find {
+          _.source == redefinedSource
+        }
+        if redA.target.subsettedProperty.contains(redefinedA.target)
+      } yield redefinedA
+    } yield redA -> redefinedAs).toMap
+
+    val redefined2redefined
+    : Map[UMLAssociationInfo, Set[UMLAssociationInfo]]
+    = (for {
+      redA <- mas
+      redefinedAs = for {
+        redefinedSource <- redA.source.redefinedProperty
+        redefinedA <- mas.find {
+          _.source == redefinedSource
+        }
+        if redA.target.redefinedProperty.contains(redefinedA.target)
+      } yield redefinedA
+    } yield redA -> redefinedAs).toMap
 
     val app = Application.getInstance()
     val guiLog = app.getGUILog
@@ -213,29 +261,76 @@ object ExportAsOTIMOFMetamodels {
       }
     }
 
-    val gs = mcs.flatMap { mc =>
+    val mcGeneralizations = mcs.flatMap { mc =>
       val specific = mc.toOTIMOFEntityUUID
       mc.parents.flatMap {
         case pc: UMLClass[MagicDrawUML] if mcs.contains(pc) =>
-          Some(tables.metamodel.OTIMOFMetaCLassifierGeneralization(
+          Some(tables.metamodel.OTIMOFMetaClassGeneralization(
             resource = metamodelIRI,
             specific,
             general=pc.toOTIMOFEntityUUID))
         case _ =>
           None
       }
-    } ++ mas.flatMap { case UMLAssociationInfo(ma, source, target) =>
+    }
+
+    val maGeneralizations
+    = subsetted2subsetted.flatMap { case (UMLAssociationInfo(ma, _, _), subsetted) =>
       val specific = ma.toOTIMOFEntityUUID
-      ma.parents.flatMap {
-        case pa: UMLAssociation[MagicDrawUML] =>
-          Some(tables.metamodel.OTIMOFMetaCLassifierGeneralization(
+      subsetted.flatMap {
+        case UMLAssociationInfo(msup, _, _) =>
+          Some(tables.metamodel.OTIMOFMetaAssociationGeneralization(
             resource = metamodelIRI,
             specific,
-            general=pa.toOTIMOFEntityUUID))
+            general = msup.toOTIMOFEntityUUID,
+            sourceRestriction = false,
+            targetRestriction = false))
         case _ =>
           None
       }
-    }
+    } ++
+      subsetted2redefined.flatMap { case (UMLAssociationInfo(ma, _, _), redefined) =>
+        val specific = ma.toOTIMOFEntityUUID
+        redefined.flatMap {
+          case UMLAssociationInfo(msup, _, _) =>
+            Some(tables.metamodel.OTIMOFMetaAssociationGeneralization(
+              resource = metamodelIRI,
+              specific,
+              general = msup.toOTIMOFEntityUUID,
+              sourceRestriction = false,
+              targetRestriction = true))
+          case _ =>
+            None
+        }
+      } ++
+      redefined2subsetted.flatMap { case (UMLAssociationInfo(ma, _, _), subsetted) =>
+        val specific = ma.toOTIMOFEntityUUID
+        subsetted.flatMap {
+          case UMLAssociationInfo(msup, _, _) =>
+            Some(tables.metamodel.OTIMOFMetaAssociationGeneralization(
+              resource = metamodelIRI,
+              specific,
+              general = msup.toOTIMOFEntityUUID,
+              sourceRestriction = true,
+              targetRestriction = false))
+          case _ =>
+            None
+        }
+      } ++
+      redefined2redefined.flatMap { case (UMLAssociationInfo(ma, _, _), redefined) =>
+        val specific = ma.toOTIMOFEntityUUID
+        redefined.flatMap {
+          case UMLAssociationInfo(msup, _, _) =>
+            Some(tables.metamodel.OTIMOFMetaAssociationGeneralization(
+              resource = metamodelIRI,
+              specific,
+              general = msup.toOTIMOFEntityUUID,
+              sourceRestriction = true,
+              targetRestriction = true))
+          case _ =>
+            None
+        }
+      }
 
     val ma2s = mas.map { case UMLAssociationInfo(ma, source, _) =>
       tables.metamodel.OTIMOFMetaAssociation2SourceEndProperty(
@@ -245,7 +340,7 @@ object ExportAsOTIMOFMetamodels {
     }
 
     val ma2t = mas.map { case UMLAssociationInfo(ma, _, target) =>
-      tables.metamodel.OTIMOFMetaAsslcoation2TargetEndProperty(
+      tables.metamodel.OTIMOFMetaAssociation2TargetEndProperty(
         resource = metamodelIRI,
         association = ma.toOTIMOFEntityUUID,
         targetEnd = target.toOTIMOFEntityUUID)
@@ -358,16 +453,20 @@ object ExportAsOTIMOFMetamodels {
         tables.metamodel.OTIMOFMetaClass(
           resource = metamodelIRI,
           uuid = mc.toOTIMOFEntityUUID,
-          name = common.Name(mc.name.get))
+          name = common.Name(mc.name.get),
+          isAbstract = mc.isAbstract)
       },
+      metaClassGeneralizations = mcGeneralizations,
+
       metaAssociations = mas.map { case UMLAssociationInfo(ma, _, _) =>
         tables.metamodel.OTIMOFMetaAssociation(
           resource = metamodelIRI,
           uuid = ma.toOTIMOFEntityUUID,
-          name = common.Name(ma.name.get))
+          name = common.Name(ma.name.get),
+          isAbstract = ma.isAbstract)
       },
+      metaAssociationGeneralizations = maGeneralizations,
 
-      generalizations = gs,
       metaClass2orderedAtomicAttribute = atomicAttributes.flatMap {
         case (mcUUID, p, i) if p.isOrdered =>
           Some(tables.metamodel.OTIMOFMetaClass2Attribute(

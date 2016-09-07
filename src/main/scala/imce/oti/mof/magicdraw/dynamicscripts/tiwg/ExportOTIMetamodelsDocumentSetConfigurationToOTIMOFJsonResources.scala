@@ -1,9 +1,11 @@
 package imce.oti.mof.magicdraw.dynamicscripts.tiwg
 
 import java.awt.event.ActionEvent
-import java.lang.{IllegalArgumentException,System}
-import java.nio.file.{Files,Path}
+import java.lang.{IllegalArgumentException, System}
+import java.nio.file.{Files, Path}
 
+import akka.actor.ActorSystem
+import akka.stream.ActorMaterializer
 import com.nomagic.actions.NMAction
 import com.nomagic.magicdraw.core.Project
 import com.nomagic.uml2.ext.jmi.helpers.StereotypesHelper
@@ -25,7 +27,7 @@ import scala.collection.immutable._
 import scala.collection.JavaConversions._
 import scala.util.{Failure, Success, Try}
 import scala.{None, Option, Some, StringContext, Tuple2}
-import scala.Predef.{require,String}
+import scala.Predef.{String, require}
 import scalaz.Scalaz._
 import scalaz._
 
@@ -131,6 +133,10 @@ object ExportOTIMetamodelsDocumentSetConfigurationToOTIMOFJsonResources {
           )(f, _ append _)
 
           val mms = metamodelExtents.b.getOrElse(Vector.empty)
+
+          implicit val system = ActorSystem("ExportOTIMetamodelsDocumentSetConfigurationToOTIMOFJsonResources")
+          implicit val mat = ActorMaterializer()
+          implicit val ec = system.dispatcher
 
           val result = Tables.exportMetamodels(resultDir, mms)
 

@@ -128,7 +128,7 @@ class OTIMOFTransactionEventsAnalyzer
                 case Some(otiMC) =>
                   val changed = new schema.events.ModelElementChangedEvent(
                     changeKind = schema.events.AddedChange,
-                    element = schema.tables.model.OTMOFModelElement(
+                    element = schema.tables.model.OTIMOFModelElement(
                       resource = schema.common.ResourceIRI(value = ""),
                       uuid = schema.common.EntityUUID(UUIDRegistry.getUUID(e)),
                       metaClass = otiMC.uuid))
@@ -150,7 +150,7 @@ class OTIMOFTransactionEventsAnalyzer
                 case Some(otiMC) =>
                   val changed = new schema.events.ModelElementChangedEvent(
                     changeKind = schema.events.DeletedChange,
-                    element = schema.tables.model.OTMOFModelElement(
+                    element = schema.tables.model.OTIMOFModelElement(
                       resource = schema.common.ResourceIRI(value = ""),
                       uuid = schema.common.EntityUUID(UUIDRegistry.getUUID(e)),
                       metaClass = otiMC.uuid))

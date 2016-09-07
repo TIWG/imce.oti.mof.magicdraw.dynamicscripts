@@ -1,5 +1,8 @@
-# JPL DynamicScripts for OMG OTI MagicDraw
+# JPL IMCE MagicDraw Dynamic Scripts for operating on MD models through the OMG Tool-Neutral Interoperability (OTI) MOF Information Schema & API
 
+[![Build Status](https://travis-ci.org/TIWG/imce.oti.mof.magicdraw.dynamicscripts.svg?branch=master)](https://travis-ci.org/TIWG/imce.oti.mof.magicdraw.dynamicscripts)
+[ ![Download](https://api.bintray.com/packages/tiwg/org.omg.tiwg/imce.oti.mof.magicdraw.dynamicscripts/images/download.svg) ](https://bintray.com/tiwg/org.omg.tiwg/imce.oti.mof.magicdraw.dynamicscripts/_latestVersion)
+ 
 # Usage
 
 ## Exporting MagicDraw 18's UML 2.5 metamodel & PrimitiveTypes

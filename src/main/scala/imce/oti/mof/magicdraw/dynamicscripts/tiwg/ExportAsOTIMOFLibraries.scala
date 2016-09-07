@@ -45,7 +45,7 @@ import org.omg.oti.json.uml.serialization.OTIJsonSerializationHelper
 import org.omg.oti.magicdraw.uml.canonicalXMI.helper.MagicDrawOTIDocumentSetAdapterForDataProvider
 import org.omg.oti.magicdraw.uml.read.{MagicDrawUML, MagicDrawUMLUtil}
 import org.omg.oti.mof.schema._
-import org.omg.oti.uml.read.api.{UMLElement, UMLPackage, UMLPrimitiveType}
+import org.omg.oti.uml.read.api.{UMLElement, UMLEnumeration, UMLPackage, UMLPrimitiveType}
 import org.omg.oti.uml.xmi.Document
 
 import scala.collection.immutable._
@@ -95,9 +95,10 @@ object ExportAsOTIMOFLibraries {
         }
       },
 
-      primitiveDataTypes = d.extent.flatMap(toDatatypeClassifier(libIRI)).toVector.sortBy(_.name),
-      enumerationDataTypes = Iterable.empty[tables.library.OTIMOFEnumerationDataType],
-      enumeration2literals = Iterable.empty[tables.library.OTIMOFEnumeration2Literal],
+      primitiveDataTypes = d.extent.flatMap(toPrimitiveDataType(libIRI)).toVector.sortBy(_.name),
+      enumerationDataTypes = d.extent.flatMap(toEnumerationDataType(libIRI)).toVector.sortBy(_.name),
+      enumeration2literals = d.extent.flatMap(toEnumeration2Literals(libIRI)).toVector,
+      enumerationLiterals = d.extent.flatMap(toEnumerationLiterals(libIRI)).toVector,
 
       structuredDataTypes = Iterable.empty[tables.library.OTIMOFStructuredDataType],
       generalizations = Iterable.empty[tables.library.OTIMOFStructuredDataTypeGeneralization],
@@ -125,7 +126,7 @@ object ExportAsOTIMOFLibraries {
     "UnlimitedNatural" -> common.DatatypeAbbrevIRI("xsd:string")
     )
 
-  def toDatatypeClassifier
+  def toPrimitiveDataType
   (libIRI: common.ResourceIRI)
   (e: UMLElement[MagicDrawUML])
   (implicit ops: MagicDrawUMLUtil)
@@ -140,6 +141,58 @@ object ExportAsOTIMOFLibraries {
       ).some
     case _ =>
       None
+  }
+
+  def toEnumerationDataType
+  (libIRI: common.ResourceIRI)
+  (e: UMLElement[MagicDrawUML])
+  (implicit ops: MagicDrawUMLUtil)
+  : Option[tables.library.OTIMOFEnumerationDataType]
+  = e match {
+    case pt: UMLEnumeration[MagicDrawUML] =>
+      tables.library.OTIMOFEnumerationDataType(
+        resource = libIRI,
+        uuid = pt.toOTIMOFEntityUUID,
+        name = common.Name(pt.name.get)
+      ).some
+    case _ =>
+      None
+  }
+
+  def toEnumeration2Literals
+  (libIRI: common.ResourceIRI)
+  (e: UMLElement[MagicDrawUML])
+  (implicit ops: MagicDrawUMLUtil)
+  : Vector[tables.library.OTIMOFEnumeration2Literal]
+  = e match {
+    case en: UMLEnumeration[MagicDrawUML] =>
+      val enUUID = en.toOTIMOFEntityUUID
+      en.ownedLiteral.toVector.zipWithIndex.map { case (l, index) =>
+        tables.library.OTIMOFEnumeration2Literal(
+          resource = libIRI,
+          enumeration = enUUID,
+          literal = l.toOTIMOFEntityUUID,
+          index)
+      }
+    case _ =>
+      Vector.empty
+  }
+
+  def toEnumerationLiterals
+  (libIRI: common.ResourceIRI)
+  (e: UMLElement[MagicDrawUML])
+  (implicit ops: MagicDrawUMLUtil)
+  : Vector[common.EnumerationLiteralValue]
+  = e match {
+    case en: UMLEnumeration[MagicDrawUML] =>
+      en.ownedLiteral.toVector.map { l =>
+        common.EnumerationLiteralValue(
+          resource = libIRI,
+          literal = l.toOTIMOFEntityUUID,
+          name = l.name.get)
+      }
+    case _ =>
+      Vector.empty
   }
 
 }

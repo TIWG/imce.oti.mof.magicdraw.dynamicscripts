@@ -222,7 +222,7 @@ object ExportAsOTIMOFModels {
         new scala.concurrent.forkjoin.ForkJoinPool(Utils.poolSize))
 
     val elements
-    : Iterable[tables.model.OTMOFModelElement]
+    : Iterable[tables.model.OTIMOFModelElement]
     = parExtent.map(toModelElement(modelIRI)).to[Iterable]
 
     val elementIDs
@@ -332,8 +332,8 @@ object ExportAsOTIMOFModels {
   (resource: common.ResourceIRI)
   (e: UMLElement[MagicDrawUML])
   (implicit cache: MetamodelTransactionPropertyNameCache)
-  : tables.model.OTMOFModelElement
-  = tables.model.OTMOFModelElement(
+  : tables.model.OTIMOFModelElement
+  = tables.model.OTIMOFModelElement(
     resource,
     uuid = e.toOTIMOFEntityUUID,
     metaClass = cache.resolver.mcName2UUID(e.mofMetaclassName))

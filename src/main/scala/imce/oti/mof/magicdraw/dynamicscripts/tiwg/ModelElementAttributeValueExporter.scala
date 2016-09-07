@@ -65,7 +65,7 @@ object ModelElementAttributeValueExporter {
   = {
     val mdE = e.getMagicDrawElement
     val mdMC = mdE.eClass
-    val attribs = cache.resolver.mc2AllOrderedAtomicAttributes.getOrElse(mdMC.getName, Set.empty[features.DataTypedAttributeProperty])
+    val attribs = cache.resolver.mc2AllOrderedAtomicAttributes.getOrElse(mdMC.getName, Set.empty[views.DataTypedAttributeInfo])
 
     mdMC
       .getEAllAttributes
@@ -127,7 +127,7 @@ object ModelElementAttributeValueExporter {
   = {
     val mdE = e.getMagicDrawElement
     val mdMC = mdE.eClass
-    val attribs = cache.resolver.mc2AllOrderedEnumerationAttributes.getOrElse(mdMC.getName, Set.empty[features.DataTypedAttributeProperty])
+    val attribs = cache.resolver.mc2AllOrderedEnumerationAttributes.getOrElse(mdMC.getName, Set.empty[views.DataTypedAttributeInfo])
 
     mdMC
       .getEAllAttributes
@@ -196,7 +196,7 @@ object ModelElementAttributeValueExporter {
   = {
     val mdE = e.getMagicDrawElement
     val mdMC = mdE.eClass
-    val attribs = cache.resolver.mc2AllOrderedStructuredAttributes.getOrElse(mdMC.getName, Set.empty[features.DataTypedAttributeProperty])
+    val attribs = cache.resolver.mc2AllOrderedStructuredAttributes.getOrElse(mdMC.getName, Set.empty[views.DataTypedAttributeInfo])
 
     mdMC
       .getEAllAttributes
@@ -268,7 +268,7 @@ object ModelElementAttributeValueExporter {
   = {
     val mdE = e.getMagicDrawElement
     val mdMC = mdE.eClass
-    val attribs = cache.resolver.mc2AllUnorderedAtomicAttributes.getOrElse(mdMC.getName, Set.empty[features.DataTypedAttributeProperty])
+    val attribs = cache.resolver.mc2AllUnorderedAtomicAttributes.getOrElse(mdMC.getName, Set.empty[views.DataTypedAttributeInfo])
 
     mdMC
       .getEAllAttributes
@@ -327,7 +327,7 @@ object ModelElementAttributeValueExporter {
   = {
     val mdE = e.getMagicDrawElement
     val mdMC = mdE.eClass
-    val attribs = cache.resolver.mc2AllUnorderedEnumerationAttributes.getOrElse(mdMC.getName, Set.empty[features.DataTypedAttributeProperty])
+    val attribs = cache.resolver.mc2AllUnorderedEnumerationAttributes.getOrElse(mdMC.getName, Set.empty[views.DataTypedAttributeInfo])
 
     mdMC
       .getEAllAttributes
@@ -393,7 +393,7 @@ object ModelElementAttributeValueExporter {
   = {
     val mdE = e.getMagicDrawElement
     val mdMC = mdE.eClass
-    val attribs = cache.resolver.mc2AllUnorderedStructuredAttributes.getOrElse(mdMC.getName, Set.empty[features.DataTypedAttributeProperty])
+    val attribs = cache.resolver.mc2AllUnorderedStructuredAttributes.getOrElse(mdMC.getName, Set.empty[views.DataTypedAttributeInfo])
 
     mdMC
       .getEAllAttributes
