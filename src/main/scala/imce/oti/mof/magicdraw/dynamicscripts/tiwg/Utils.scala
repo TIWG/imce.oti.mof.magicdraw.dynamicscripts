@@ -191,7 +191,7 @@ object Utils {
   val PrimitiveTypes_IRI = common.ResourceIRI("http://www.omg.org/spec/PrimitiveTypes/20131001")
   val UML25_IRI = common.ResourceIRI("http://www.omg.org/spec/UML/20131001")
 
-  val resourcesPath: String = "dynamicScripts/org.omg.oti.mof.md18.generator/resources/"
+  val resourcesPath: String = "dynamicScripts/imce.oti.mof.magicdraw.dynamicscripts/resources/"
 
   val MagicDraw18_implementation_DocumentSetConfiguration_File
   : String

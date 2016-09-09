@@ -184,6 +184,7 @@ def dynamicScriptsResourceSettings(projectName: String): Seq[Setting[_]] = {
       (dir, bin, src, doc, binT, srcT, docT) =>
         (dir ** "*.md").pair(rebase(dir, projectName)) ++
         (dir / "resources" ***).pair(rebase(dir, projectName)) ++
+        addIfExists(dir, ".classpath") ++
         addIfExists(bin, projectName + "/lib/" + bin.name) ++
         addIfExists(binT, projectName + "/lib/" + binT.name) ++
         addIfExists(src, projectName + "/lib.sources/" + src.name) ++

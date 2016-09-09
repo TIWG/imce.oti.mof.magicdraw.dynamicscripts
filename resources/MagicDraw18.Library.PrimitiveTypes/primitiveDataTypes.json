@@ -1,0 +1,5 @@
+{"resource":"http://www.omg.org/spec/PrimitiveTypes/20131001","uuid":"b462dd99-1c03-4bcb-bc92-887a69aa8ca3","name":"Boolean","datatypeMapDefinition":"xsd:boolean"}
+{"resource":"http://www.omg.org/spec/PrimitiveTypes/20131001","uuid":"47294366-bf75-4ca3-bf28-47057e157596","name":"Integer","datatypeMapDefinition":"xsd:integer"}
+{"resource":"http://www.omg.org/spec/PrimitiveTypes/20131001","uuid":"bffc7fce-3760-4c5a-a538-1783a58c3af3","name":"Real","datatypeMapDefinition":"xsd:double"}
+{"resource":"http://www.omg.org/spec/PrimitiveTypes/20131001","uuid":"b2ba8c2c-d236-4d7b-b7f3-212782702ea1","name":"String","datatypeMapDefinition":"xsd:string"}
+{"resource":"http://www.omg.org/spec/PrimitiveTypes/20131001","uuid":"fa8dfc03-3d7f-4e30-8c27-75e2958fc8be","name":"UnlimitedNatural","datatypeMapDefinition":"xsd:string"}

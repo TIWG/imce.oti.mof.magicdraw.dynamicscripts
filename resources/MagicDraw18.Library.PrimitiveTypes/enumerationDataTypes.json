@@ -1,0 +1,13 @@
+{"resource":"http://www.omg.org/spec/PrimitiveTypes/20131001","uuid":"b2da6159-7c9d-4016-967a-84c23d2baa58","name":"AggregationKind"}
+{"resource":"http://www.omg.org/spec/PrimitiveTypes/20131001","uuid":"7bd35f31-1f25-438f-915a-ef21eccc5bcb","name":"CallConcurrencyKind"}
+{"resource":"http://www.omg.org/spec/PrimitiveTypes/20131001","uuid":"fbc42671-2f70-4783-93ad-84e55d378260","name":"ConnectorKind"}
+{"resource":"http://www.omg.org/spec/PrimitiveTypes/20131001","uuid":"213643c8-fe97-4f3d-9e5c-fff1152de264","name":"ExpansionKind"}
+{"resource":"http://www.omg.org/spec/PrimitiveTypes/20131001","uuid":"b8f40296-9b7c-4d25-b5c5-fcca6b0ec48c","name":"InteractionOperatorKind"}
+{"resource":"http://www.omg.org/spec/PrimitiveTypes/20131001","uuid":"835f2b64-7219-485f-877d-a39f278937f8","name":"MessageKind"}
+{"resource":"http://www.omg.org/spec/PrimitiveTypes/20131001","uuid":"53a6aa42-bc4c-4634-9ff5-7209180fc7b3","name":"MessageSort"}
+{"resource":"http://www.omg.org/spec/PrimitiveTypes/20131001","uuid":"c9c217f5-f99d-4034-82eb-48ec099e8704","name":"ObjectNodeOrderingKind"}
+{"resource":"http://www.omg.org/spec/PrimitiveTypes/20131001","uuid":"13bcabbe-7bf7-4180-9ff2-dfa4ff0433a0","name":"ParameterDirectionKind"}
+{"resource":"http://www.omg.org/spec/PrimitiveTypes/20131001","uuid":"83fca16c-c265-4d18-8d99-f13358b88d41","name":"ParameterEffectKind"}
+{"resource":"http://www.omg.org/spec/PrimitiveTypes/20131001","uuid":"b830b881-1b49-4e9e-9d3e-46150c8e0dcc","name":"PseudostateKind"}
+{"resource":"http://www.omg.org/spec/PrimitiveTypes/20131001","uuid":"016798f7-d84f-4fb1-b3db-78e6594a74a5","name":"TransitionKind"}
+{"resource":"http://www.omg.org/spec/PrimitiveTypes/20131001","uuid":"fed81c95-b17c-4acb-847c-624b4fbd6153","name":"VisibilityKind"}

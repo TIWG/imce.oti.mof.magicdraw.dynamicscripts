@@ -13,12 +13,12 @@
   Check `Save UUID`
   *Restart* MagicDraw (Environment options are save only on exit)
 
-- Open [resources/MagicDraw18-UML25-implementation.mdzip]
+- Open `org.omg.oti.mof.schema/resources/FundamentalConcepts.mdzip`
 
   This resource is a refactored copy of the "UML2 Metamodel with attributes", version 2.5
   (See MagicDraw Help > Resource/Plugin Manager > Samples)
 
-  Refactoring:
+  Refactoring summary:
 
   - Move all Enumerations defined in the UML metamodel to the PrimitiveTypes library.
 
@@ -29,19 +29,21 @@
 
     Compared with OMG UML 2.5, NoMagic's MagicDraw UML2.5 metamodel has 12 extra unnamed associations.
 
-- Select the `PrimitivesTypes` package (not `UML Standard Profile::UML2 Metamodel::PrimitiveTypes`)
+- Exporting MD18's PrimitiveTypes library to normalized OTI MOF Json
 
-  Invoke the context menu: `DynamicScriptsContextMenu > OMG Tool Infrastructure / MOF Json > Export as OTI MOF Libraries`
-  This produces a file in `<md.install>/dynamicScripts/MagicDraw-PROJECT-c2fc83618b4dc266f74f4e84613b74c.zip`
-  that contains the OTI MOF Json serialization of the PrimitivesTypes library.
-  Save that Json file to [resources/PrimitiveTypes.library.json]
+  Invoke the DynamicScripts toolbar menu: `DynamicScripts > OMG Tool Infrastructure / MOF Json > Export Libraries OTI DocumentSet configuration to OTI MOF Json Resources`
+  
+  A file chooser opens prompting for a directory where to save OTI MOF normalized *.json files.
+  Then, another file chooser opens prompting for an OTI DocumentSet configuration file.
+  Select [resources/MagicDraw18-implementation.library.documentSetConfiguration.json]
 
-- Select the `UML2.5` package (not `UML StandardProfile::UML2 Metamodel`)
+- Exporting MD18's UML metamdel to normalized OTI MOF Json
 
-  Invoke the context menu: `DynamicScriptsContextMenu > OMG Tool Infrastructure / MOF Json > Export as OTI MOF Metamodels`
-    This produces a file in `<md.install>/dynamicScripts/MagicDraw-PROJECT-c2fc83618b4dc266f74f4e84613b74c.zip`
-    that contains the OTI MOF Json serialization of the UML metamodel.
-    Save that Json file to [resources/UML.metamodel.json]
+  Invoke the DynamicScripts toolbar menu: `DynamicScripts > OMG Tool Infrastructure / MOF Json > Export Metamodels OTI DocumentSet configuration to OTI MOF Json Resources`
+  
+  A file chooser opens prompting for a directory where to save OTI MOF normalized *.json files.
+  Then, another file chooser opens prompting for an OTI DocumentSet configuration file.
+  Select [resources/MagicDraw18-implementation.metamodel.documentSetConfiguration.json]
 
 - Unfortunately, it's pointless to do this for MagicDraw's built-in profiles (e.g. StandardProfile, SysML, ..)
   because these resources do not contain UUIDs. Even with `Save UUIDs`, the UUID of elements in built-in resources
