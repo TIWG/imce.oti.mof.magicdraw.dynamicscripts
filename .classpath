@@ -1,6 +1,7 @@
 NicolasRouquette<?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src/main/scala"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/org.omg.oti.uml.magicdraw.adapter"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/imce.oti.uml.magicdraw.dynamicscripts"/>
+	<classpathentry combineaccessrules="false" kind="src" path="/org.omg.oti.mof.schema"/>
 	<classpathentry kind="output" path="target/scala-2.11/classes"/>
 </classpath>
