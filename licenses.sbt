@@ -26,7 +26,7 @@ val oti_mof_schema_license =
       |License Terms
       |""".stripMargin
 
-startYear := Some(2014)
+startYear := Some(2016)
 
 headers := Map("scala" -> (HeaderPattern.cStyleBlockComment, CommentBlock.cStyle(oti_mof_schema_license)))
 

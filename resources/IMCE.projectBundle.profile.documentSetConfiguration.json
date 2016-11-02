@@ -1,0 +1,20 @@
+{
+  "documents": [
+    {
+      "otiCharacteristics": {
+        "packageURI": "http://imce.jpl.nasa.gov/foundation/project/project-bundle",
+        "documentURL": "http://imce.jpl.nasa.gov/foundation/project/project-bundle",
+        "artifactKind": {
+          "type": "OTISerializableProfileArtifactKind"
+        },
+        "nsPrefix": "project-bundle",
+        "uuidPrefix": "imce.jpl.nasa.gov_foundation_project-bundle"
+      },
+      "toolSpecificPackageID": "_project-bundle__0",
+      "toolSpecificPackageURL": "mdel://_project-bundle__0?projectName=project-bundle&elementName=Profile+project-bundle&metaType=Profile&elementQName=IMCE+Ontology+Bundles%3A%3Aimce.jpl.nasa.gov%3A%3Afoundation%3A%3Aproject%3A%3Aproject-bundle",
+      "overrideID": [],
+      "overrideUUID": [],
+      "excludeNestedElements": []
+    }
+  ]
+}
