@@ -190,8 +190,8 @@ object ExportOTIDocumentSetConfiguration {
     guiLog.clearLog()
 
     System.out.println(s"selected packages: ${selectedSpecificationRootPackages.size}")
-    selectedSpecificationRootPackages.foreach { p =>
-      guiLog.log(s"- ${p.qualifiedName.get}")
+    selectedSpecificationRootPackages.foreach { pkg =>
+      guiLog.log(s"- ${pkg.qualifiedName.get}")
     }
 
     val emptyConfig
