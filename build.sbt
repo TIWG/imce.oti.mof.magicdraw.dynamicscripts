@@ -22,6 +22,64 @@ resolvers := {
     previous
 }
 
+// @see https://github.com/jrudolph/sbt-dependency-graph/issues/113
+def zipFileSelector
+( a: Artifact, f: File)
+: Boolean
+= a.`type` == "zip" || a.extension == "zip"
+
+def pluginFileSelector
+( a: Artifact, f: File)
+: Boolean
+= (a.`type` == "zip" || a.`type` == "resource") &&
+  a.extension == "zip" &&
+  a.name.endsWith("plugin_2.11")
+
+def dsFileSelector
+( a: Artifact, f: File)
+: Boolean
+= (a.`type` == "zip" || a.`type` == "resource") &&
+  a.extension == "zip" &&
+  ! a.name.startsWith("imce.third_party.") &&
+  ! a.name.endsWith("plugin_2.11") &&
+  ! a.classifier.getOrElse("").startsWith("part")
+
+// @see https://github.com/jrudolph/sbt-dependency-graph/issues/113
+def fromConfigurationReport
+(report: ConfigurationReport,
+ rootInfo: sbt.ModuleID,
+ selector: (Artifact, File) => Boolean)
+: net.virtualvoid.sbt.graph.ModuleGraph = {
+  implicit def id(sbtId: sbt.ModuleID): net.virtualvoid.sbt.graph.ModuleId
+  = net.virtualvoid.sbt.graph.ModuleId(sbtId.organization, sbtId.name, sbtId.revision)
+
+  def moduleEdges(orgArt: OrganizationArtifactReport)
+  : Seq[(net.virtualvoid.sbt.graph.Module, Seq[net.virtualvoid.sbt.graph.Edge])]
+  = {
+    val chosenVersion = orgArt.modules.find(!_.evicted).map(_.module.revision)
+    orgArt.modules.map(moduleEdge(chosenVersion))
+  }
+
+  def moduleEdge(chosenVersion: Option[String])(report: ModuleReport)
+  : (net.virtualvoid.sbt.graph.Module, Seq[net.virtualvoid.sbt.graph.Edge]) = {
+    val evictedByVersion = if (report.evicted) chosenVersion else None
+
+    val jarFile = report.artifacts.find(selector.tupled).map(_._2)
+    (net.virtualvoid.sbt.graph.Module(
+      id = report.module,
+      license = report.licenses.headOption.map(_._1),
+      evictedByVersion = evictedByVersion,
+      jarFile = jarFile,
+      error = report.problem),
+      report.callers.map(caller ⇒ net.virtualvoid.sbt.graph.Edge(caller.caller, report.module)))
+  }
+
+  val (nodes, edges) = report.details.flatMap(moduleEdges).unzip
+  val root = net.virtualvoid.sbt.graph.Module(rootInfo)
+
+  net.virtualvoid.sbt.graph.ModuleGraph(root +: nodes, edges.flatten)
+}
+
 lazy val core = Project("imce-oti-mof-magicdraw-dynamicscripts", file("."))
   .enablePlugins(IMCEGitPlugin)
   .enablePlugins(IMCEReleasePlugin)
@@ -80,65 +138,126 @@ lazy val core = Project("imce-oti-mof-magicdraw-dynamicscripts", file("."))
     )
   )
   .settings(
+
     extractArchives := {
-      val base = baseDirectory.value
-      val up = update.value
       val s = streams.value
       val mdInstallDir = (mdInstallDirectory in ThisBuild).value
-
       if (!mdInstallDir.exists) {
 
-        val parts = (for {
-          cReport <- up.configurations
-          if cReport.configuration == "compile"
-          mReport <- cReport.modules
-          if mReport.module.organization == "org.omg.tiwg.vendor.nomagic"
-          (artifact, archive) <- mReport.artifacts
-        } yield archive).sorted
+        val crossV = CrossVersion(scalaVersion.value, scalaBinaryVersion.value)(projectID.value)
+        val runtimeDepGraph =
+          net.virtualvoid.sbt.graph.DependencyGraphKeys.ignoreMissingUpdate.value.configuration("runtime").get
+        val compileDepGraph =
+          net.virtualvoid.sbt.graph.DependencyGraphKeys.ignoreMissingUpdate.value.configuration("compile").get
 
-        s.log.info(s"Extracting MagicDraw from ${parts.size} parts:")
-        parts.foreach { p => s.log.info(p.getAbsolutePath) }
+        // @see https://github.com/jrudolph/sbt-dependency-graph/issues/113
+        val g1 = fromConfigurationReport(runtimeDepGraph, crossV, zipFileSelector)
 
-        val merged = File.createTempFile("md_merged", ".zip")
-        println(s"merged: ${merged.getAbsolutePath}")
+        for {
+          module <- g1.nodes
+          if module.id.organisation == "org.omg.tiwg.vendor.nomagic"
+          archive <- module.jarFile
+          extractFolder = mdInstallDir
+          _ = s.log.info(s"*** Extracting MD: $archive")
+          _ = s.log.info(s"*** Extract to: $extractFolder")
+          files = IO.unzip(archive, extractFolder)
+          _ = require(files.nonEmpty)
+          _ = s.log.info(s"*** Extracted ${files.size} files")
+        } yield ()
 
-        val zip = File.createTempFile("md_no_install", ".zip")
-        println(s"zip: ${zip.getAbsolutePath}")
+        // @see https://github.com/jrudolph/sbt-dependency-graph/issues/113
+        val g2 = fromConfigurationReport(compileDepGraph, crossV, pluginFileSelector)
 
-        val script = File.createTempFile("unzip_md", ".sh")
-        println(s"script: ${script.getAbsolutePath}")
+        for {
+          module <- g2.nodes
+          archive <- module.jarFile
+          extractFolder = mdInstallDir
+          _ = s.log.info(s"*** Extracting Plugin: $archive")
+          _ = s.log.info(s"*** Extract to: $extractFolder")
+          files = IO.unzip(archive, extractFolder)
+          _ = require(files.nonEmpty)
+          _ = s.log.info(s"*** Extracted ${files.size} files")
+        } yield ()
 
-        val out = new java.io.PrintWriter(new java.io.FileOutputStream(script))
-        out.println("#!/bin/bash")
-        out.println(parts.map(_.getAbsolutePath).mkString("cat ", " ", s" > ${merged.getAbsolutePath}"))
-        out.println(s"zip -FF ${merged.getAbsolutePath} --out ${zip.getAbsolutePath}")
-        out.println(s"unzip -q ${zip.getAbsolutePath} -d ${mdInstallDir.getAbsolutePath}")
-        out.close()
+        // @see https://github.com/jrudolph/sbt-dependency-graph/issues/113
+        val g3 = fromConfigurationReport(compileDepGraph, crossV, dsFileSelector)
 
-        val result = sbt.Process(command = "/bin/bash", arguments = Seq[String](script.getAbsolutePath)).!
-
-        require(0 <= result && result <= 2, s"Failed to execute script (exit=$result): ${script.getAbsolutePath}")
-
-        val mdDynamicScriptsDir = mdInstallDir / "dynamicScripts"
-        IO.createDirectory(mdDynamicScriptsDir)
-
-        val zfilter: DependencyFilter = new DependencyFilter {
-          def apply(c: String, m: ModuleID, a: Artifact): Boolean =
-            (a.`type` == "zip" || a.`type` == "resource") &&
-              a.extension == "zip" &&
-              m.organization == "org.omg.tiwg"
-        }
-        val zs: Seq[File] = up.matching(zfilter)
-        zs.foreach { zip =>
-          val files = IO.unzip(zip, mdDynamicScriptsDir)
-          s.log.info(
-            s"=> extracted ${files.size} DynamicScripts files from zip: ${zip.getName}")
-        }
+        for {
+          module <- g3.nodes
+          if module.id.organisation != "gov.nasa.jpl.cae.magicdraw.packages"
+          archive <- module.jarFile
+          extractFolder = mdInstallDir / "dynamicScripts"
+          _ = IO.createDirectory(extractFolder)
+          _ = s.log.info(s"*** Extracting DynamicScripts: $archive")
+          _ = s.log.info(s"*** Extract to: $extractFolder")
+          files = IO.unzip(archive, extractFolder)
+          _ = require(files.nonEmpty)
+          _ = s.log.info(s"*** Extracted ${files.size} files")
+        } yield ()
 
       } else
         s.log.info(
           s"=> use existing md.install.dir=$mdInstallDir")
     },
+//    extractArchives := {
+//      val base = baseDirectory.value
+//      val up = update.value
+//      val s = streams.value
+//      val mdInstallDir = (mdInstallDirectory in ThisBuild).value
+//
+//      if (!mdInstallDir.exists) {
+//
+//        val parts = (for {
+//          cReport <- up.configurations
+//          if cReport.configuration == "compile"
+//          mReport <- cReport.modules
+//          if mReport.module.organization == "org.omg.tiwg.vendor.nomagic"
+//          (artifact, archive) <- mReport.artifacts
+//        } yield archive).sorted
+//
+//        s.log.info(s"Extracting MagicDraw from ${parts.size} parts:")
+//        parts.foreach { p => s.log.info(p.getAbsolutePath) }
+//
+//        val merged = File.createTempFile("md_merged", ".zip")
+//        println(s"merged: ${merged.getAbsolutePath}")
+//
+//        val zip = File.createTempFile("md_no_install", ".zip")
+//        println(s"zip: ${zip.getAbsolutePath}")
+//
+//        val script = File.createTempFile("unzip_md", ".sh")
+//        println(s"script: ${script.getAbsolutePath}")
+//
+//        val out = new java.io.PrintWriter(new java.io.FileOutputStream(script))
+//        out.println("#!/bin/bash")
+//        out.println(parts.map(_.getAbsolutePath).mkString("cat ", " ", s" > ${merged.getAbsolutePath}"))
+//        out.println(s"zip -FF ${merged.getAbsolutePath} --out ${zip.getAbsolutePath}")
+//        out.println(s"unzip -q ${zip.getAbsolutePath} -d ${mdInstallDir.getAbsolutePath}")
+//        out.close()
+//
+//        val result = sbt.Process(command = "/bin/bash", arguments = Seq[String](script.getAbsolutePath)).!
+//
+//        require(0 <= result && result <= 2, s"Failed to execute script (exit=$result): ${script.getAbsolutePath}")
+//
+//        val mdDynamicScriptsDir = mdInstallDir / "dynamicScripts"
+//        IO.createDirectory(mdDynamicScriptsDir)
+//
+//        val zfilter: DependencyFilter = new DependencyFilter {
+//          def apply(c: String, m: ModuleID, a: Artifact): Boolean =
+//            (a.`type` == "zip" || a.`type` == "resource") &&
+//              a.extension == "zip" &&
+//              m.organization == "org.omg.tiwg"
+//        }
+//        val zs: Seq[File] = up.matching(zfilter)
+//        zs.foreach { zip =>
+//          val files = IO.unzip(zip, mdDynamicScriptsDir)
+//          s.log.info(
+//            s"=> extracted ${files.size} DynamicScripts files from zip: ${zip.getName}")
+//        }
+//
+//      } else
+//        s.log.info(
+//          s"=> use existing md.install.dir=$mdInstallDir")
+//    },
 
     unmanagedJars in Compile := {
       val prev = (unmanagedJars in Compile).value
@@ -183,19 +302,25 @@ def dynamicScriptsResourceSettings(projectName: String): Seq[Setting[_]] = {
       val srcT = (packageSrc in Test).value
       val docT = (packageDoc in Test).value
 
+
+      (dir * ".classpath").pair(rebase(dir, projectName)) ++
       (dir * "*.md").pair(rebase(dir, projectName)) ++
-        (dir / "resources" ***).pair(rebase(dir, projectName)) ++
-        addIfExists(dir, ".classpath") ++
-        addIfExists(bin, projectName + "/lib/" + bin.name) ++
-        addIfExists(binT, projectName + "/lib/" + binT.name) ++
-        addIfExists(src, projectName + "/lib.sources/" + src.name) ++
-        addIfExists(srcT, projectName + "/lib.sources/" + srcT.name) ++
-        addIfExists(doc, projectName + "/lib.javadoc/" + doc.name) ++
-        addIfExists(docT, projectName + "/lib.javadoc/" + docT.name)
+      (dir / "resources" ***).pair(rebase(dir, projectName)) ++
+      addIfExists(bin, projectName + "/lib/" + bin.name) ++
+      addIfExists(binT, projectName + "/lib/" + binT.name) ++
+      addIfExists(src, projectName + "/lib.sources/" + src.name) ++
+      addIfExists(srcT, projectName + "/lib.sources/" + srcT.name) ++
+      addIfExists(doc, projectName + "/lib.javadoc/" + doc.name) ++
+      addIfExists(docT, projectName + "/lib.javadoc/" + docT.name)
     },
 
-    artifacts <+= (name in Universal) { n => Artifact(n, "zip", "zip", Some("resource"), Seq(), None, Map()) },
-    packagedArtifacts <+= (packageBin in Universal, name in Universal) map { (p, n) =>
+    artifacts += {
+      val n = (name in Universal).value
+      Artifact(n, "zip", "zip", Some("resource"), Seq(), None, Map())
+    },
+    packagedArtifacts += {
+      val p = (packageBin in Universal).value
+      val n = (name in Universal).value
       Artifact(n, "zip", "zip", Some("resource"), Seq(), None, Map()) -> p
     }
   )
