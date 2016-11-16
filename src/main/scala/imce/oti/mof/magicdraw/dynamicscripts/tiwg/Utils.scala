@@ -298,16 +298,24 @@ object Utils {
 
                 result.a match {
                   case None =>
-                    result.b match {
-                      case None =>
-                        Success(None)
-                      case Some(successOrError) =>
-                        successOrError
-                    }
+                    ()
 
                   case Some(errors) =>
-                    Failure(errors.head)
+                    guiLog.log(s"Ignoring ${errors.size} errors:")
+                    errors.foreach { e =>
+                      System.err.println("\n\nIgnoring Error:\n")
+                      System.err.println(e.getMessage)
+                      e.printStackTrace(System.err)
+                    }
                 }
+
+                result.b match {
+                  case None =>
+                    Success(None)
+                  case Some(successOrError) =>
+                    successOrError
+                }
+
               })
         }
       }
