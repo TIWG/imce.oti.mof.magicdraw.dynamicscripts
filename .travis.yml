@@ -1,6 +1,11 @@
 # Use container-based infrastructure
 sudo: false
 
+addons:
+  apt:
+    packages:
+      - oracle-java8-installer
+
 # These directories are cached to S3 at the end of the build
 cache:
   directories:
