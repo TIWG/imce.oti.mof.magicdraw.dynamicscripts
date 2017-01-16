@@ -112,10 +112,10 @@ class OTIMOFTransactionEventsAnalyzer
 
         case e: Element if !OTIMOFTransactionEventsAnalyzer.ignoreMDPropertyNames.contains(event.getPropertyName) =>
 
-          val prop = event.getPropertyName
-          val oldV = event.getOldValue
-          val newV = event.getNewValue
-          val desc = e.toString + " : " + prop + " => Old value: " + oldV + ", new value: " + newV
+          val prop: String = event.getPropertyName
+          val oldV: java.lang.Object = event.getOldValue
+          val newV: java.lang.Object  = event.getNewValue
+          val desc: String = e.toString + " : " + prop + " => Old value: " + oldV + ", new value: " + newV
 
           guiLog.log("\n")
           prop match {
@@ -255,7 +255,9 @@ class OTIMOFTransactionEventsAnalyzer
                                 else
                                   schema.events.ModifiedChange
 
-                              val value = if (changeKind == schema.events.DeletedChange)
+                              val value
+                              : java.lang.Object
+                              = if (changeKind == schema.events.DeletedChange)
                                 oldV
                               else
                                 newV
@@ -404,7 +406,9 @@ class OTIMOFTransactionEventsAnalyzer
                                 else
                                   schema.events.ModifiedChange
 
-                              val value = if (changeKind == schema.events.DeletedChange)
+                              val value
+                              : java.lang.Object
+                              = if (changeKind == schema.events.DeletedChange)
                                 oldV
                               else
                                 newV
