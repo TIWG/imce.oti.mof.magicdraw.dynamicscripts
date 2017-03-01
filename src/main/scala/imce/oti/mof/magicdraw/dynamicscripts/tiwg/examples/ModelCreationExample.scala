@@ -119,7 +119,7 @@ object ModelCreationExample {
         .either({
           // save a copy of the template project
           pm.loadProject(load, silent)
-          val project = a.getProject
+          val project = pm.getActiveProject
           val d = ProjectDescriptorsFactory.createLocalProjectDescriptor(project, exampleLoadFile)
           pm.saveProject(d, silent)
           System.out.println(s"=> Saved created MD example: $exampleLoadFile")
